@@ -7,6 +7,7 @@
 # include "renderer.hpp"
 # include "window.hpp"
 # include "rand_generator.hpp"
+#include "time_counter.hpp"
 
 void advance_time( const fractal_land& land, pheronome& phen, 
                    const position_t& pos_nest, const position_t& pos_food,
@@ -20,6 +21,8 @@ void advance_time( const fractal_land& land, pheronome& phen,
 
 int main(int nargs, char* argv[])
 {
+    TimeCounter counter;
+    counter.start();
     SDL_Init( SDL_INIT_VIDEO );
     std::size_t seed = 2026; // Graine pour la génération aléatoire ( reproductible )
     const int nb_ants = 5000; // Nombre de fourmis
@@ -73,8 +76,11 @@ int main(int nargs, char* argv[])
             if (event.type == SDL_QUIT)
                 cont_loop = false;
         }
+        counter.elapsed_time("render");
         advance_time( land, phen, pos_nest, pos_food, ants, food_quantity );
+        counter.elapsed_time("advance");
         renderer.display( win, food_quantity );
+        counter.elapsed_time("display food");
         win.blit();
         if ( not_food_in_nest && food_quantity > 0 ) {
             std::cout << "La première nourriture est arrivée au nid a l'iteration " << it << std::endl;

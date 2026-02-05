@@ -1,4 +1,3 @@
-// ant.hpp
 #ifndef _ANT_HPP_
 # define _ANT_HPP_
 # include <utility>

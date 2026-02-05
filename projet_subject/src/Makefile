@@ -18,7 +18,7 @@ default:	help
 all: $(ALL)
 
 clean:
-	@rm -fr *.o *.exe *~
+	del /q *.o *.exe *~
 
 .cpp.o:
 	$(CXX) $(CXXFLAGS2) -c $^ -o $@	
