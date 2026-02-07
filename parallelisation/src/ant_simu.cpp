@@ -22,8 +22,7 @@ void advance_time( const fractal_land& land, pheronome& phen,
 int main(int nargs, char* argv[])
 {
     TimeCounter counter;
-    counter.start();
-
+    
     SDL_Init( SDL_INIT_VIDEO );
     std::size_t seed = 2026; // Graine pour la génération aléatoire ( reproductible )
     const int nb_ants = 5000; // Nombre de fourmis
@@ -40,23 +39,23 @@ int main(int nargs, char* argv[])
     fractal_land land(8,2,1.,1024);
     double max_val = 0.0;
     double min_val = 0.0;
-
+    
     Population ants(nb_ants);
     ants.set_exploration_coef(eps);
-
+    
     for ( fractal_land::dim_t i = 0; i < land.dimensions(); ++i )
-        for ( fractal_land::dim_t j = 0; j < land.dimensions(); ++j ) {
-            max_val = std::max(max_val, land(i,j));
-            min_val = std::min(min_val, land(i,j));
-        }
+    for ( fractal_land::dim_t j = 0; j < land.dimensions(); ++j ) {
+        max_val = std::max(max_val, land(i,j));
+        min_val = std::min(min_val, land(i,j));
+    }
     double delta = max_val - min_val;
     /* On redimensionne les valeurs de fractal_land de sorte que les valeurs
     soient comprises entre zéro et un */
     for ( fractal_land::dim_t i = 0; i < land.dimensions(); ++i )
-        for ( fractal_land::dim_t j = 0; j < land.dimensions(); ++j )  {
-            land(i,j) = (land(i,j)-min_val)/delta;
-        }
-
+    for ( fractal_land::dim_t j = 0; j < land.dimensions(); ++j )  {
+        land(i,j) = (land(i,j)-min_val)/delta;
+    }
+    
     // On va créer des fourmis un peu partout sur la carte :
     
     auto gen_ant_pos = [&land, &seed] () { return rand_int32(0, land.dimensions()-1, seed); };
@@ -66,7 +65,7 @@ int main(int nargs, char* argv[])
     }
     // On crée toutes les fourmis dans la fourmilière.
     pheronome phen(land.dimensions(), pos_food, pos_nest, alpha, beta);
-
+    
     Window win("Ant Simulation", 2*land.dimensions()+10, land.dimensions()+266);
     Renderer renderer( land, phen, pos_nest, pos_food, ants );
     // Compteur de la quantité de nourriture apportée au nid par les fourmis
@@ -76,16 +75,20 @@ int main(int nargs, char* argv[])
     bool not_food_in_nest = true;
     std::size_t it = 0;
     while (cont_loop) {
+        counter.start_render();
         ++it;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT)
                 cont_loop = false;
         }
-        counter.elapsed_time("render");
+        counter.end_render();
+        counter.start_advance();
         advance_time( land, phen, pos_nest, pos_food, food_quantity, ants);
-        counter.elapsed_time("advance");
+        counter.end_advance();
+        counter.start_food();
         renderer.display( win, food_quantity );
-        counter.elapsed_time("display food");
+        counter.end_food();
+        counter.print_averages();
         win.blit();
         if ( not_food_in_nest && food_quantity > 0 ) {
             std::cout << "La première nourriture est arrivée au nid a l'iteration " << it << std::endl;
