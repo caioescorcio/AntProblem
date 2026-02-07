@@ -2,15 +2,15 @@
 #include <iostream>
 #include "rand_generator.hpp"
 
-void population::advance(int index, pheronome& phen, const fractal_land& land, const position_t& pos_food, const position_t& pos_nest,
-                   std::size_t& cpteur_food ) {
+void Population::advance(int index, pheronome& phen, const fractal_land& land, const position_t& pos_food, const position_t& pos_nest,
+                   std::size_t& cpteur_food) {
 
-    auto ant_choice = [this]() mutable { return rand_double( 0., 1., this->seeds[index] ); };   // choise based on most likely pheromone route
-    auto dir_choice = [this]() mutable { return rand_int32( 1, 4, this->seeds[index] ); };      // random choice in case of no good pheromone route
+    auto ant_choice = [this, index]() mutable { return rand_double( 0., 1., this->seeds[index] ); };   // choise based on most likely pheromone route
+    auto dir_choice = [this, index]() mutable { return rand_int32( 1, 4, this->seeds[index] ); };      // random choice in case of no good pheromone route
     double consumed_time = 0.;
     while ( consumed_time < 1. ) {
         // Si la fourmi est chargée, elle suit les phéromones de deuxième type, sinon ceux du premier.
-        int        ind_pher    = ( is_loaded( ) ? 1 : 0 );
+        int        ind_pher    = ( is_loaded(index) ? 1 : 0 );
         double     choix       = ant_choice( );
         position_t old_pos_ant = get_position(index);
         position_t new_pos_ant = old_pos_ant;

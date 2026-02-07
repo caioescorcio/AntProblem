@@ -19,19 +19,20 @@ public:
         is_running = true;
     }
 
-    void elapsed_time(char* part_name) {
+    void elapsed_time(std::string part_name) {
         if (is_running) {
             current_time = std::chrono::high_resolution_clock::now();
         }
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time);
-        std::cout <<"Current elapsed time for " << part_name <<": " << duration.count() << " s" << std::endl;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(current_time - start_time);
+        std::cout << part_name <<": " << (double) duration.count() << " ms" << std::endl;
+        start_time = std::chrono::high_resolution_clock::now();
     }
 
     void end_counter() {
         end_time = std::chrono::high_resolution_clock::now();
         is_running = false;
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-        std::cout << "Counter ended. Total time passed: " << duration.count() << " s" << std::endl;
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        std::cout << "Counter ended. Total time passed: " << (double)duration.count() << " ms" << std::endl;
     }
 };
 

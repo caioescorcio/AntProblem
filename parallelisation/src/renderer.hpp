@@ -1,15 +1,15 @@
 #pragma once
 #include "fractal_land.hpp"
-#include "ant.hpp"
 #include "pheronome.hpp"
 #include "window.hpp"
+#include "population.hpp"
 
 class Renderer
 {
 public:
     Renderer(  const fractal_land& land, const pheronome& phen, 
                const position_t& pos_nest, const position_t& pos_food,
-               const std::vector<ant>& ants );
+               const Population& pop );
 
     Renderer(const Renderer& ) = delete;
     ~Renderer();
@@ -21,6 +21,6 @@ private:
     const pheronome& m_ref_phen;
     const position_t& m_pos_nest;
     const position_t& m_pos_food;
-    const std::vector<ant>& m_ref_ants;
+    const Population& m_ref_pop;
     std::vector<std::size_t> m_curve;    
 };

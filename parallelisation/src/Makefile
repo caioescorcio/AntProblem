@@ -18,12 +18,12 @@ default:	help
 all: $(ALL)
 
 clean:
-	@rm -fr *.o *.exe *~
+	@del /q *.o *.exe *~
 
 .cpp.o:
 	$(CXX) $(CXXFLAGS2) -c $^ -o $@	
 
-ant_simu.exe : ant.o fractal_land.o renderer.o window.o ant_simu.o
+ant_simu.exe : population.o fractal_land.o renderer.o window.o ant_simu.o
 	$(CXX) $(CXXFLAGS2) $^ -o $@ $(LIB)	
 
 help:

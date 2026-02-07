@@ -2,24 +2,28 @@
 #include <iostream>
 #include <random>
 #include "fractal_land.hpp"
-#include "ant.hpp"
+#include "population.hpp"
 #include "pheronome.hpp"
 # include "renderer.hpp"
 # include "window.hpp"
 # include "rand_generator.hpp"
+#include "time_counter.hpp"
 
 void advance_time( const fractal_land& land, pheronome& phen, 
                    const position_t& pos_nest, const position_t& pos_food,
-                   std::vector<ant>& ants, std::size_t& cpteur )
+                std::size_t& cpteur , Population& pop)
 {
-    for ( size_t i = 0; i < ants.size(); ++i )
-        ants[i].advance(phen, land, pos_food, pos_nest, cpteur);
+    for ( size_t i = 0; i < pop.get_size(); ++i )
+        pop.advance(i, phen, land, pos_food, pos_nest, cpteur);
     phen.do_evaporation();
     phen.update();
 }
 
 int main(int nargs, char* argv[])
 {
+    TimeCounter counter;
+    counter.start();
+
     SDL_Init( SDL_INIT_VIDEO );
     std::size_t seed = 2026; // Graine pour la génération aléatoire ( reproductible )
     const int nb_ants = 5000; // Nombre de fourmis
@@ -36,6 +40,10 @@ int main(int nargs, char* argv[])
     fractal_land land(8,2,1.,1024);
     double max_val = 0.0;
     double min_val = 0.0;
+
+    Population ants(nb_ants);
+    ants.set_exploration_coef(eps);
+
     for ( fractal_land::dim_t i = 0; i < land.dimensions(); ++i )
         for ( fractal_land::dim_t j = 0; j < land.dimensions(); ++j ) {
             max_val = std::max(max_val, land(i,j));
@@ -48,14 +56,14 @@ int main(int nargs, char* argv[])
         for ( fractal_land::dim_t j = 0; j < land.dimensions(); ++j )  {
             land(i,j) = (land(i,j)-min_val)/delta;
         }
-    // Définition du coefficient d'exploration de toutes les fourmis.
-    ant::set_exploration_coef(eps);
+
     // On va créer des fourmis un peu partout sur la carte :
-    std::vector<ant> ants;
-    ants.reserve(nb_ants);
+    
     auto gen_ant_pos = [&land, &seed] () { return rand_int32(0, land.dimensions()-1, seed); };
-    for ( size_t i = 0; i < nb_ants; ++i )
-        ants.emplace_back(position_t{gen_ant_pos(),gen_ant_pos()}, seed);
+    for (size_t i = 0; i < nb_ants; ++i) {
+        // this calls push_back internally and increments the vector sizes
+        ants.new_ant({gen_ant_pos(), gen_ant_pos()}, unloaded, seed);
+    }
     // On crée toutes les fourmis dans la fourmilière.
     pheronome phen(land.dimensions(), pos_food, pos_nest, alpha, beta);
 
@@ -73,8 +81,11 @@ int main(int nargs, char* argv[])
             if (event.type == SDL_QUIT)
                 cont_loop = false;
         }
-        advance_time( land, phen, pos_nest, pos_food, ants, food_quantity );
+        counter.elapsed_time("render");
+        advance_time( land, phen, pos_nest, pos_food, food_quantity, ants);
+        counter.elapsed_time("advance");
         renderer.display( win, food_quantity );
+        counter.elapsed_time("display food");
         win.blit();
         if ( not_food_in_nest && food_quantity > 0 ) {
             std::cout << "La première nourriture est arrivée au nid a l'iteration " << it << std::endl;
