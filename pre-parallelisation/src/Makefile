@@ -4,7 +4,7 @@ include Make_msys2.inc
 
 CXXFLAGS = -std=c++17
 ifdef DEBUG
-CXXFLAGS += -g -O3 -fopenmp fbounds-check -pedantic -D_GLIBCXX_DEBUG
+CXXFLAGS += -g -O0 -Wall -fbounds-check -pedantic -D_GLIBCXX_DEBUG
 CXXFLAGS2 = CXXFLAGS
 else
 CXXFLAGS2 = ${CXXFLAGS} -O2 -march=native -Wall 
