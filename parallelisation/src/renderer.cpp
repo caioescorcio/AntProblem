@@ -4,13 +4,13 @@
 
 Renderer::Renderer( const fractal_land& land, const pheronome& phen, 
                     const position_t& pos_nest, const position_t& pos_food,
-                    const std::vector<ant>& ants )
+                    const Population& pop)
     :   m_ref_land( land ),
         m_land( nullptr ),
         m_ref_phen( phen ),
         m_pos_nest( pos_nest ),
         m_pos_food( pos_food ),
-        m_ref_ants( ants )
+        m_ref_pop( pop )
 {
     // Note: La texture sera créée lors du premier display() car on a besoin du renderer de la fenêtre
 }
@@ -23,7 +23,6 @@ Renderer::~Renderer() {
 void Renderer::display( Window& win, std::size_t const& compteur )
 {
     SDL_Renderer* renderer = SDL_GetRenderer( win.get() );
-    
     // Créer la texture du paysage si elle n'existe pas encore
     if ( m_land == nullptr ) {
         // Créer une surface temporaire pour construire l'image du paysage
@@ -49,7 +48,6 @@ void Renderer::display( Window& win, std::size_t const& compteur )
         m_land = SDL_CreateTextureFromSurface( renderer, temp_surface );
         SDL_FreeSurface( temp_surface );
     }
-    
     // Effacer le renderer
     SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
     SDL_RenderClear( renderer );
@@ -64,8 +62,8 @@ void Renderer::display( Window& win, std::size_t const& compteur )
     SDL_SetRenderDrawBlendMode( renderer, SDL_BLENDMODE_BLEND );
     
     // Affichage des fourmis dans le cadran en haut à gauche :
-    for ( auto& ant : m_ref_ants ) {
-        const position_t& pos_ant = ant.get_position( );
+    for ( size_t i = 0; i < m_ref_pop.get_size(); i++ ) {
+        const position_t& pos_ant = m_ref_pop.get_position(i);
         win.set_pen( 0, 255, 255 );
         win.pset( static_cast<int>( pos_ant.x ), static_cast<int>( pos_ant.y ) );
     }

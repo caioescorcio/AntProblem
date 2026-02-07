@@ -23,7 +23,6 @@ Renderer::~Renderer() {
 void Renderer::display( Window& win, std::size_t const& compteur )
 {
     SDL_Renderer* renderer = SDL_GetRenderer( win.get() );
-    
     // Créer la texture du paysage si elle n'existe pas encore
     if ( m_land == nullptr ) {
         // Créer une surface temporaire pour construire l'image du paysage
@@ -49,7 +48,6 @@ void Renderer::display( Window& win, std::size_t const& compteur )
         m_land = SDL_CreateTextureFromSurface( renderer, temp_surface );
         SDL_FreeSurface( temp_surface );
     }
-    
     // Effacer le renderer
     SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
     SDL_RenderClear( renderer );
