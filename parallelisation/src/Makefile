@@ -2,9 +2,12 @@
 include Make_msys2.inc
 #include Make_osx.inc
 
-CXXFLAGS = -std=c++17
+INCDIR = ../include
+
+CXXFLAGS = -std=c++17 -I$(INCDIR)
+
 ifdef DEBUG
-CXXFLAGS += -g -O3 -fopenmp fbounds-check -pedantic -D_GLIBCXX_DEBUG
+CXXFLAGS += -g -O0 -fopenmp fbounds-check -pedantic -D_GLIBCXX_DEBUG # using the OpenMP but using the same -OX optmisation flags from the other codeas
 CXXFLAGS2 = CXXFLAGS
 else
 CXXFLAGS2 = ${CXXFLAGS} -O2 -march=native -Wall 
