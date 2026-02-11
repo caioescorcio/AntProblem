@@ -4,16 +4,15 @@
 #include "fractal_land.hpp"
 #include "population.hpp"
 #include "pheronome.hpp"
-#include "renderer.hpp"
-#include "window.hpp"
-#include "rand_generator.hpp"
+# include "renderer.hpp"
+# include "window.hpp"
+# include "rand_generator.hpp"
 #include "time_counter.hpp"
 
 void advance_time( const fractal_land& land, pheronome& phen, 
                    const position_t& pos_nest, const position_t& pos_food,
                 std::size_t& cpteur , Population& pop)
 {
-    #pragma omp parallel for reduction(+:cpteur)
     for ( size_t i = 0; i < pop.get_size(); ++i )
         pop.advance(i, phen, land, pos_food, pos_nest, cpteur);
     phen.do_evaporation();
