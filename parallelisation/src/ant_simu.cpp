@@ -4,9 +4,9 @@
 #include "fractal_land.hpp"
 #include "population.hpp"
 #include "pheronome.hpp"
-# include "renderer.hpp"
-# include "window.hpp"
-# include "rand_generator.hpp"
+#include "renderer.hpp"
+#include "window.hpp"
+#include "rand_generator.hpp"
 #include "time_counter.hpp"
 
 void advance_time( const fractal_land& land, pheronome& phen, 
