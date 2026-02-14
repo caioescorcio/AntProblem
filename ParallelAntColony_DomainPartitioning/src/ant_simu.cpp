@@ -4,11 +4,14 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
+#include <array>
+#include <cstdint>
 #include <random>
 #include <limits>
 #include <SDL2/SDL.h>
 #include <mpi.h>
-
+#include "renderer.hpp"
+#include "window.hpp"
 #include "population.hpp"
 #include "fractal_land.hpp"
 #include "pheronome.hpp"
@@ -385,10 +388,12 @@ int main(int argc, char** argv)
     // Root will build and keep a full pheromone map (two components) for rendering
     std::vector<double> global_pher_food;
     std::vector<double> global_pher_nest;
-    std::vector<Uint32> pher_pixels;
-    SDL_Window* sdl_window = nullptr;
-    SDL_Renderer* sdl_renderer = nullptr;
-    SDL_Texture* sdl_texture = nullptr;
+    std::unique_ptr<Population> root_population;
+    std::unique_ptr<pheronome> root_pheromone;
+    std::unique_ptr<Window> root_window;
+    std::unique_ptr<Renderer> root_renderer;
+    bool sdl_ready = false;
+    bool renderer_ready = false;
 
     // Normalize using GLOBAL min/max to avoid per-rank inconsistent scaling
     double global_min_val = 0.0;
@@ -450,30 +455,28 @@ int main(int argc, char** argv)
     MPI_Comm cart_workers = MPI_COMM_NULL;
 
     if (rank == 0) {
-        SDL_Init(SDL_INIT_VIDEO);
-        const int sdl_dim = static_cast<int>(global_dim_ul);
-        sdl_window = SDL_CreateWindow("Ant Pheromone Map",
-                                      SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                      sdl_dim, sdl_dim, SDL_WINDOW_SHOWN);
-        if (sdl_window != nullptr) {
-            sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_ACCELERATED);
-            if (sdl_renderer == nullptr) {
-                sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_SOFTWARE);
-            }
-            if (sdl_renderer != nullptr) {
-                sdl_texture = SDL_CreateTexture(
-                    sdl_renderer,
-                    SDL_PIXELFORMAT_ARGB8888,
-                    SDL_TEXTUREACCESS_STREAMING,
-                    sdl_dim, sdl_dim
+        if (SDL_Init(SDL_INIT_VIDEO) == 0) {
+            sdl_ready = true;
+            root_population = std::make_unique<Population>(0);
+            root_pheromone = std::make_unique<pheronome>(
+                global_dim_ul, global_dim_ul, pos_food, pos_nest, alpha, beta
+            );
+            root_window = std::make_unique<Window>(
+                "Ant Simulation",
+                static_cast<int>(2 * global_dim_ul + 10),
+                static_cast<int>(global_dim_ul + 266)
+            );
+
+            if (root_window->get() != nullptr) {
+                root_renderer = std::make_unique<Renderer>(
+                    *full_land, *root_pheromone, pos_nest, pos_food, *root_population
                 );
-                if (sdl_texture != nullptr) {
-                    pher_pixels.resize(
-                        static_cast<std::size_t>(sdl_dim) * static_cast<std::size_t>(sdl_dim),
-                        0xFF000000u
-                    );
-                }
+                renderer_ready = true;
+            } else {
+                std::cerr << "Window creation failed: " << SDL_GetError() << std::endl;
             }
+        } else {
+            std::cerr << "SDL_Init failed: " << SDL_GetError() << std::endl;
         }
 
         // Rank 0: send each worker its subarray (tile + halo)
@@ -625,6 +628,7 @@ int main(int argc, char** argv)
     // Worker-side temporary buffers for sending pheromones to root
     std::vector<double> send_pher_food;
     std::vector<double> send_pher_nest;
+    std::size_t global_food_quantity = 0;
 
     while (true) {
         // Rank 0 decides whether we keep running
@@ -634,9 +638,11 @@ int main(int argc, char** argv)
             counter.start_render();
             ++it;
 
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) {
-                    cont_loop = false;
+            if (renderer_ready) {
+                while (SDL_PollEvent(&event)) {
+                    if (event.type == SDL_QUIT) {
+                        cont_loop = false;
+                    }
                 }
             }
 
@@ -703,45 +709,103 @@ int main(int argc, char** argv)
 
                 MPI_Waitall(static_cast<int>(rreqs.size()), rreqs.data(), MPI_STATUSES_IGNORE);
             }
+        }
 
-            if (sdl_renderer != nullptr && sdl_texture != nullptr && !pher_pixels.empty()) {
-                const std::size_t n = pher_pixels.size();
-                for (std::size_t i = 0; i < n; ++i) {
-                    double rf = global_pher_food[i];
-                    if (rf < 0.0) rf = 0.0;
-                    if (rf > 1.0) rf = 1.0;
+        // Reduce cumulative delivered food to root for graph display.
+        const std::uint64_t local_food_u64 = static_cast<std::uint64_t>(food_quantity);
+        std::uint64_t reduced_food_u64 = 0;
+        MPI_Reduce(&local_food_u64, &reduced_food_u64, 1, MPI_UINT64_T, MPI_SUM, 0, MPI_COMM_WORLD);
 
-                    double gn = global_pher_nest[i];
-                    if (gn < 0.0) gn = 0.0;
-                    if (gn > 1.0) gn = 1.0;
-
-                    const Uint32 r = static_cast<Uint32>(rf * 255.0);
-                    const Uint32 g = static_cast<Uint32>(gn * 255.0);
-                    pher_pixels[i] = 0xFF000000u | (r << 16) | (g << 8);
+        // Gather all ant positions to root for the left panel.
+        int local_ant_count = 0;
+        std::vector<int> local_ant_xy;
+        if (rank != 0 && ants != nullptr && local_land != nullptr) {
+            local_ant_xy.reserve(static_cast<std::size_t>(ants->get_size()) * 2ULL);
+            for (std::size_t i = 0; i < ants->get_size(); ++i) {
+                const position_t p = ants->get_position(static_cast<int>(i));
+                const int gx = static_cast<int>(local_land->storage_x_offset()) + p.x;
+                const int gy = static_cast<int>(local_land->storage_y_offset()) + p.y;
+                if (gx < 0 || gy < 0 ||
+                    gx >= static_cast<int>(global_dim_ul) ||
+                    gy >= static_cast<int>(global_dim_ul)) {
+                    continue;
                 }
-
-                const int pitch = static_cast<int>(global_dim_ul) * static_cast<int>(sizeof(Uint32));
-                SDL_UpdateTexture(sdl_texture, nullptr, pher_pixels.data(), pitch);
-                SDL_RenderClear(sdl_renderer);
-                SDL_RenderCopy(sdl_renderer, sdl_texture, nullptr, nullptr);
-                SDL_RenderPresent(sdl_renderer);
+                local_ant_xy.push_back(gx);
+                local_ant_xy.push_back(gy);
             }
+            local_ant_count = static_cast<int>(local_ant_xy.size() / 2);
+        }
+
+        std::vector<int> ant_counts;
+        std::vector<int> ant_recv_counts;
+        std::vector<int> ant_displs;
+        std::vector<int> all_ant_xy;
+        if (rank == 0) {
+            ant_counts.assign(static_cast<std::size_t>(nbp), 0);
+            ant_recv_counts.assign(static_cast<std::size_t>(nbp), 0);
+            ant_displs.assign(static_cast<std::size_t>(nbp), 0);
+        }
+
+        MPI_Gather(&local_ant_count, 1, MPI_INT,
+                   (rank == 0) ? ant_counts.data() : nullptr, 1, MPI_INT,
+                   0, MPI_COMM_WORLD);
+
+        if (rank == 0) {
+            int disp = 0;
+            for (int r = 0; r < nbp; ++r) {
+                ant_displs[r] = disp;
+                ant_recv_counts[r] = ant_counts[r] * 2;
+                disp += ant_recv_counts[r];
+            }
+            all_ant_xy.resize(static_cast<std::size_t>(disp));
+        }
+
+        MPI_Gatherv(local_ant_xy.empty() ? nullptr : local_ant_xy.data(),
+                    local_ant_count * 2, MPI_INT,
+                    (rank == 0 && !all_ant_xy.empty()) ? all_ant_xy.data() : nullptr,
+                    (rank == 0) ? ant_recv_counts.data() : nullptr,
+                    (rank == 0) ? ant_displs.data() : nullptr,
+                    MPI_INT, 0, MPI_COMM_WORLD);
+
+        if (rank == 0 && renderer_ready &&
+            root_pheromone != nullptr && root_renderer != nullptr &&
+            root_window != nullptr && root_population != nullptr) {
+            global_food_quantity = static_cast<std::size_t>(reduced_food_u64);
+
+            std::size_t k = 0;
+            for (fractal_land::dim_t y = 0; y < global_dim; ++y) {
+                for (fractal_land::dim_t x = 0; x < global_dim; ++x) {
+                    auto& cell = (*root_pheromone)(x, y);
+                    cell[0] = global_pher_food[k];
+                    cell[1] = global_pher_nest[k];
+                    ++k;
+                }
+            }
+
+            root_population->clear();
+            root_population->reserve(all_ant_xy.size() / 2);
+            for (std::size_t i = 0; i + 1 < all_ant_xy.size(); i += 2) {
+                root_population->new_ant(
+                    {all_ant_xy[i], all_ant_xy[i + 1]},
+                    unloaded,
+                    0
+                );
+            }
+
+            root_renderer->display(*root_window, global_food_quantity);
         }
 
         // SDL_Delay(10);
     }
 
     if (rank == 0) {
-        if (sdl_texture != nullptr) {
-            SDL_DestroyTexture(sdl_texture);
+        root_renderer.reset();
+        root_window.reset();
+        root_pheromone.reset();
+        root_population.reset();
+        if (sdl_ready) {
+            SDL_Quit();
         }
-        if (sdl_renderer != nullptr) {
-            SDL_DestroyRenderer(sdl_renderer);
-        }
-        if (sdl_window != nullptr) {
-            SDL_DestroyWindow(sdl_window);
-        }
-        SDL_Quit();
 
         // Free root receive types
         for (int world_src = 1; world_src < nbp; ++world_src) {

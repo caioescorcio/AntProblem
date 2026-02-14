@@ -1,31 +1,31 @@
 [
 {
   "directory": "/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/build",
-  "command": "/usr/bin/mpicxx  -I/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include -isystem /usr/include/SDL2 -std=c++17 -Wall -Wextra -o CMakeFiles/ant_simu.dir/src/population.cpp.o -c /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/population.cpp",
+  "command": "/usr/bin/mpicxx  -I/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include -isystem /usr/include/SDL2 -O3 -DNDEBUG -std=c++17 -Wall -Wextra -o CMakeFiles/ant_simu.dir/src/population.cpp.o -c /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/population.cpp",
   "file": "/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/population.cpp",
   "output": "CMakeFiles/ant_simu.dir/src/population.cpp.o"
 },
 {
   "directory": "/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/build",
-  "command": "/usr/bin/mpicxx  -I/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include -isystem /usr/include/SDL2 -std=c++17 -Wall -Wextra -o CMakeFiles/ant_simu.dir/src/ant_simu.cpp.o -c /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/ant_simu.cpp",
+  "command": "/usr/bin/mpicxx  -I/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include -isystem /usr/include/SDL2 -O3 -DNDEBUG -std=c++17 -Wall -Wextra -o CMakeFiles/ant_simu.dir/src/ant_simu.cpp.o -c /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/ant_simu.cpp",
   "file": "/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/ant_simu.cpp",
   "output": "CMakeFiles/ant_simu.dir/src/ant_simu.cpp.o"
 },
 {
   "directory": "/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/build",
-  "command": "/usr/bin/mpicxx  -I/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include -isystem /usr/include/SDL2 -std=c++17 -Wall -Wextra -o CMakeFiles/ant_simu.dir/src/fractal_land.cpp.o -c /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/fractal_land.cpp",
+  "command": "/usr/bin/mpicxx  -I/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include -isystem /usr/include/SDL2 -O3 -DNDEBUG -std=c++17 -Wall -Wextra -o CMakeFiles/ant_simu.dir/src/fractal_land.cpp.o -c /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/fractal_land.cpp",
   "file": "/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/fractal_land.cpp",
   "output": "CMakeFiles/ant_simu.dir/src/fractal_land.cpp.o"
 },
 {
   "directory": "/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/build",
-  "command": "/usr/bin/mpicxx  -I/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include -isystem /usr/include/SDL2 -std=c++17 -Wall -Wextra -o CMakeFiles/ant_simu.dir/src/renderer.cpp.o -c /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/renderer.cpp",
+  "command": "/usr/bin/mpicxx  -I/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include -isystem /usr/include/SDL2 -O3 -DNDEBUG -std=c++17 -Wall -Wextra -o CMakeFiles/ant_simu.dir/src/renderer.cpp.o -c /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/renderer.cpp",
   "file": "/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/renderer.cpp",
   "output": "CMakeFiles/ant_simu.dir/src/renderer.cpp.o"
 },
 {
   "directory": "/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/build",
-  "command": "/usr/bin/mpicxx  -I/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include -isystem /usr/include/SDL2 -std=c++17 -Wall -Wextra -o CMakeFiles/ant_simu.dir/src/window.cpp.o -c /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/window.cpp",
+  "command": "/usr/bin/mpicxx  -I/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include -isystem /usr/include/SDL2 -O3 -DNDEBUG -std=c++17 -Wall -Wextra -o CMakeFiles/ant_simu.dir/src/window.cpp.o -c /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/window.cpp",
   "file": "/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/src/window.cpp",
   "output": "CMakeFiles/ant_simu.dir/src/window.cpp.o"
 }

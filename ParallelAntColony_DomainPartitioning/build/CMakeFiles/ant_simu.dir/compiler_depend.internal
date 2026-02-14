@@ -8,7 +8,9 @@ CMakeFiles/ant_simu.dir/src/ant_simu.cpp.o
  /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/pheronome.hpp
  /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/population.hpp
  /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/rand_generator.hpp
+ /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/renderer.hpp
  /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/time_counter.hpp
+ /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/window.hpp
  /usr/include/SDL2/SDL.h
  /usr/include/SDL2/SDL_assert.h
  /usr/include/SDL2/SDL_atomic.h
@@ -264,13 +266,22 @@ CMakeFiles/ant_simu.dir/src/ant_simu.cpp.o
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
  /usr/include/x86_64-linux-gnu/bits/sched.h
+ /usr/include/x86_64-linux-gnu/bits/select-decl.h
  /usr/include/x86_64-linux-gnu/bits/select.h
+ /usr/include/x86_64-linux-gnu/bits/select2.h
  /usr/include/x86_64-linux-gnu/bits/setjmp.h
  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h
  /usr/include/x86_64-linux-gnu/bits/stdint-least.h
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h
+ /usr/include/x86_64-linux-gnu/bits/stdio.h
+ /usr/include/x86_64-linux-gnu/bits/stdio2-decl.h
+ /usr/include/x86_64-linux-gnu/bits/stdio2.h
  /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
+ /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h
  /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
+ /usr/include/x86_64-linux-gnu/bits/stdlib.h
+ /usr/include/x86_64-linux-gnu/bits/string_fortified.h
+ /usr/include/x86_64-linux-gnu/bits/strings_fortified.h
  /usr/include/x86_64-linux-gnu/bits/struct_mutex.h
  /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h
  /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h
@@ -308,6 +319,8 @@ CMakeFiles/ant_simu.dir/src/ant_simu.cpp.o
  /usr/include/x86_64-linux-gnu/bits/waitflags.h
  /usr/include/x86_64-linux-gnu/bits/waitstatus.h
  /usr/include/x86_64-linux-gnu/bits/wchar.h
+ /usr/include/x86_64-linux-gnu/bits/wchar2-decl.h
+ /usr/include/x86_64-linux-gnu/bits/wchar2.h
  /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h
  /usr/include/x86_64-linux-gnu/bits/wordsize.h
  /usr/include/x86_64-linux-gnu/c++/13/bits/atomic_word.h
@@ -602,12 +615,19 @@ CMakeFiles/ant_simu.dir/src/fractal_land.cpp.o
  /usr/include/x86_64-linux-gnu/bits/mathcalls.h
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
+ /usr/include/x86_64-linux-gnu/bits/select-decl.h
  /usr/include/x86_64-linux-gnu/bits/select.h
+ /usr/include/x86_64-linux-gnu/bits/select2.h
  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h
  /usr/include/x86_64-linux-gnu/bits/stdint-least.h
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h
+ /usr/include/x86_64-linux-gnu/bits/stdio.h
+ /usr/include/x86_64-linux-gnu/bits/stdio2-decl.h
+ /usr/include/x86_64-linux-gnu/bits/stdio2.h
  /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
+ /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h
  /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
+ /usr/include/x86_64-linux-gnu/bits/stdlib.h
  /usr/include/x86_64-linux-gnu/bits/struct_mutex.h
  /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h
  /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h
@@ -639,6 +659,8 @@ CMakeFiles/ant_simu.dir/src/fractal_land.cpp.o
  /usr/include/x86_64-linux-gnu/bits/waitflags.h
  /usr/include/x86_64-linux-gnu/bits/waitstatus.h
  /usr/include/x86_64-linux-gnu/bits/wchar.h
+ /usr/include/x86_64-linux-gnu/bits/wchar2-decl.h
+ /usr/include/x86_64-linux-gnu/bits/wchar2.h
  /usr/include/x86_64-linux-gnu/bits/wordsize.h
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++allocator.h
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h
@@ -885,13 +907,22 @@ CMakeFiles/ant_simu.dir/src/population.cpp.o
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
  /usr/include/x86_64-linux-gnu/bits/sched.h
+ /usr/include/x86_64-linux-gnu/bits/select-decl.h
  /usr/include/x86_64-linux-gnu/bits/select.h
+ /usr/include/x86_64-linux-gnu/bits/select2.h
  /usr/include/x86_64-linux-gnu/bits/setjmp.h
  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h
  /usr/include/x86_64-linux-gnu/bits/stdint-least.h
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h
+ /usr/include/x86_64-linux-gnu/bits/stdio.h
+ /usr/include/x86_64-linux-gnu/bits/stdio2-decl.h
+ /usr/include/x86_64-linux-gnu/bits/stdio2.h
  /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
+ /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h
  /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
+ /usr/include/x86_64-linux-gnu/bits/stdlib.h
+ /usr/include/x86_64-linux-gnu/bits/string_fortified.h
+ /usr/include/x86_64-linux-gnu/bits/strings_fortified.h
  /usr/include/x86_64-linux-gnu/bits/struct_mutex.h
  /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h
  /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h
@@ -929,6 +960,8 @@ CMakeFiles/ant_simu.dir/src/population.cpp.o
  /usr/include/x86_64-linux-gnu/bits/waitflags.h
  /usr/include/x86_64-linux-gnu/bits/waitstatus.h
  /usr/include/x86_64-linux-gnu/bits/wchar.h
+ /usr/include/x86_64-linux-gnu/bits/wchar2-decl.h
+ /usr/include/x86_64-linux-gnu/bits/wchar2.h
  /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h
  /usr/include/x86_64-linux-gnu/bits/wordsize.h
  /usr/include/x86_64-linux-gnu/c++/13/bits/atomic_word.h
@@ -1219,12 +1252,21 @@ CMakeFiles/ant_simu.dir/src/renderer.cpp.o
  /usr/include/x86_64-linux-gnu/bits/mathcalls.h
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
+ /usr/include/x86_64-linux-gnu/bits/select-decl.h
  /usr/include/x86_64-linux-gnu/bits/select.h
+ /usr/include/x86_64-linux-gnu/bits/select2.h
  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h
  /usr/include/x86_64-linux-gnu/bits/stdint-least.h
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h
+ /usr/include/x86_64-linux-gnu/bits/stdio.h
+ /usr/include/x86_64-linux-gnu/bits/stdio2-decl.h
+ /usr/include/x86_64-linux-gnu/bits/stdio2.h
  /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
+ /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h
  /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
+ /usr/include/x86_64-linux-gnu/bits/stdlib.h
+ /usr/include/x86_64-linux-gnu/bits/string_fortified.h
+ /usr/include/x86_64-linux-gnu/bits/strings_fortified.h
  /usr/include/x86_64-linux-gnu/bits/struct_mutex.h
  /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h
  /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h
@@ -1255,6 +1297,8 @@ CMakeFiles/ant_simu.dir/src/renderer.cpp.o
  /usr/include/x86_64-linux-gnu/bits/waitflags.h
  /usr/include/x86_64-linux-gnu/bits/waitstatus.h
  /usr/include/x86_64-linux-gnu/bits/wchar.h
+ /usr/include/x86_64-linux-gnu/bits/wchar2-decl.h
+ /usr/include/x86_64-linux-gnu/bits/wchar2.h
  /usr/include/x86_64-linux-gnu/bits/wordsize.h
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++allocator.h
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h
@@ -1494,12 +1538,21 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o
  /usr/include/x86_64-linux-gnu/bits/mathcalls.h
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
+ /usr/include/x86_64-linux-gnu/bits/select-decl.h
  /usr/include/x86_64-linux-gnu/bits/select.h
+ /usr/include/x86_64-linux-gnu/bits/select2.h
  /usr/include/x86_64-linux-gnu/bits/stdint-intn.h
  /usr/include/x86_64-linux-gnu/bits/stdint-least.h
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h
+ /usr/include/x86_64-linux-gnu/bits/stdio.h
+ /usr/include/x86_64-linux-gnu/bits/stdio2-decl.h
+ /usr/include/x86_64-linux-gnu/bits/stdio2.h
  /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
+ /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h
  /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
+ /usr/include/x86_64-linux-gnu/bits/stdlib.h
+ /usr/include/x86_64-linux-gnu/bits/string_fortified.h
+ /usr/include/x86_64-linux-gnu/bits/strings_fortified.h
  /usr/include/x86_64-linux-gnu/bits/struct_mutex.h
  /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h
  /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h
@@ -1530,6 +1583,8 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o
  /usr/include/x86_64-linux-gnu/bits/waitflags.h
  /usr/include/x86_64-linux-gnu/bits/waitstatus.h
  /usr/include/x86_64-linux-gnu/bits/wchar.h
+ /usr/include/x86_64-linux-gnu/bits/wchar2-decl.h
+ /usr/include/x86_64-linux-gnu/bits/wchar2.h
  /usr/include/x86_64-linux-gnu/bits/wordsize.h
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h
  /usr/include/x86_64-linux-gnu/c++/13/bits/cpu_defines.h

@@ -70,6 +70,13 @@ class Population {
             states.reserve(capacity);
             seeds.reserve(capacity);
         }
+
+        void clear() {
+            positions.clear();
+            states.clear();
+            seeds.clear();
+            m_size = 0;
+        }
     };
 
 #endif

@@ -7,7 +7,9 @@ CMakeFiles/ant_simu.dir/src/ant_simu.cpp.o: /home/santiago/OS202/AntProblem/Para
   /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/pheronome.hpp \
   /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/population.hpp \
   /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/rand_generator.hpp \
+  /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/renderer.hpp \
   /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/time_counter.hpp \
+  /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/window.hpp \
   /usr/include/SDL2/SDL.h \
   /usr/include/SDL2/SDL_assert.h \
   /usr/include/SDL2/SDL_atomic.h \
@@ -263,13 +265,22 @@ CMakeFiles/ant_simu.dir/src/ant_simu.cpp.o: /home/santiago/OS202/AntProblem/Para
   /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h \
   /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h \
   /usr/include/x86_64-linux-gnu/bits/sched.h \
+  /usr/include/x86_64-linux-gnu/bits/select-decl.h \
   /usr/include/x86_64-linux-gnu/bits/select.h \
+  /usr/include/x86_64-linux-gnu/bits/select2.h \
   /usr/include/x86_64-linux-gnu/bits/setjmp.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio2-decl.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio2.h \
   /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
+  /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h \
   /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
+  /usr/include/x86_64-linux-gnu/bits/stdlib.h \
+  /usr/include/x86_64-linux-gnu/bits/string_fortified.h \
+  /usr/include/x86_64-linux-gnu/bits/strings_fortified.h \
   /usr/include/x86_64-linux-gnu/bits/struct_mutex.h \
   /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h \
   /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h \
@@ -307,6 +318,8 @@ CMakeFiles/ant_simu.dir/src/ant_simu.cpp.o: /home/santiago/OS202/AntProblem/Para
   /usr/include/x86_64-linux-gnu/bits/waitflags.h \
   /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
   /usr/include/x86_64-linux-gnu/bits/wchar.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar2-decl.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar2.h \
   /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h \
   /usr/include/x86_64-linux-gnu/bits/wordsize.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/atomic_word.h \
@@ -600,12 +613,19 @@ CMakeFiles/ant_simu.dir/src/fractal_land.cpp.o: /home/santiago/OS202/AntProblem/
   /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
   /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h \
   /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h \
+  /usr/include/x86_64-linux-gnu/bits/select-decl.h \
   /usr/include/x86_64-linux-gnu/bits/select.h \
+  /usr/include/x86_64-linux-gnu/bits/select2.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio2-decl.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio2.h \
   /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
+  /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h \
   /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
+  /usr/include/x86_64-linux-gnu/bits/stdlib.h \
   /usr/include/x86_64-linux-gnu/bits/struct_mutex.h \
   /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h \
   /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h \
@@ -637,6 +657,8 @@ CMakeFiles/ant_simu.dir/src/fractal_land.cpp.o: /home/santiago/OS202/AntProblem/
   /usr/include/x86_64-linux-gnu/bits/waitflags.h \
   /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
   /usr/include/x86_64-linux-gnu/bits/wchar.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar2-decl.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar2.h \
   /usr/include/x86_64-linux-gnu/bits/wordsize.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/c++allocator.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
@@ -882,13 +904,22 @@ CMakeFiles/ant_simu.dir/src/population.cpp.o: /home/santiago/OS202/AntProblem/Pa
   /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h \
   /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h \
   /usr/include/x86_64-linux-gnu/bits/sched.h \
+  /usr/include/x86_64-linux-gnu/bits/select-decl.h \
   /usr/include/x86_64-linux-gnu/bits/select.h \
+  /usr/include/x86_64-linux-gnu/bits/select2.h \
   /usr/include/x86_64-linux-gnu/bits/setjmp.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio2-decl.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio2.h \
   /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
+  /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h \
   /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
+  /usr/include/x86_64-linux-gnu/bits/stdlib.h \
+  /usr/include/x86_64-linux-gnu/bits/string_fortified.h \
+  /usr/include/x86_64-linux-gnu/bits/strings_fortified.h \
   /usr/include/x86_64-linux-gnu/bits/struct_mutex.h \
   /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h \
   /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h \
@@ -926,6 +957,8 @@ CMakeFiles/ant_simu.dir/src/population.cpp.o: /home/santiago/OS202/AntProblem/Pa
   /usr/include/x86_64-linux-gnu/bits/waitflags.h \
   /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
   /usr/include/x86_64-linux-gnu/bits/wchar.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar2-decl.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar2.h \
   /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h \
   /usr/include/x86_64-linux-gnu/bits/wordsize.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/atomic_word.h \
@@ -1215,12 +1248,21 @@ CMakeFiles/ant_simu.dir/src/renderer.cpp.o: /home/santiago/OS202/AntProblem/Para
   /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
   /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h \
   /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h \
+  /usr/include/x86_64-linux-gnu/bits/select-decl.h \
   /usr/include/x86_64-linux-gnu/bits/select.h \
+  /usr/include/x86_64-linux-gnu/bits/select2.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio2-decl.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio2.h \
   /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
+  /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h \
   /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
+  /usr/include/x86_64-linux-gnu/bits/stdlib.h \
+  /usr/include/x86_64-linux-gnu/bits/string_fortified.h \
+  /usr/include/x86_64-linux-gnu/bits/strings_fortified.h \
   /usr/include/x86_64-linux-gnu/bits/struct_mutex.h \
   /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h \
   /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h \
@@ -1251,6 +1293,8 @@ CMakeFiles/ant_simu.dir/src/renderer.cpp.o: /home/santiago/OS202/AntProblem/Para
   /usr/include/x86_64-linux-gnu/bits/waitflags.h \
   /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
   /usr/include/x86_64-linux-gnu/bits/wchar.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar2-decl.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar2.h \
   /usr/include/x86_64-linux-gnu/bits/wordsize.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/c++allocator.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
@@ -1489,12 +1533,21 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
   /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
   /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h \
   /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h \
+  /usr/include/x86_64-linux-gnu/bits/select-decl.h \
   /usr/include/x86_64-linux-gnu/bits/select.h \
+  /usr/include/x86_64-linux-gnu/bits/select2.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio2-decl.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio2.h \
   /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
+  /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h \
   /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
+  /usr/include/x86_64-linux-gnu/bits/stdlib.h \
+  /usr/include/x86_64-linux-gnu/bits/string_fortified.h \
+  /usr/include/x86_64-linux-gnu/bits/strings_fortified.h \
   /usr/include/x86_64-linux-gnu/bits/struct_mutex.h \
   /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h \
   /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h \
@@ -1525,6 +1578,8 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
   /usr/include/x86_64-linux-gnu/bits/waitflags.h \
   /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
   /usr/include/x86_64-linux-gnu/bits/wchar.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar2-decl.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar2.h \
   /usr/include/x86_64-linux-gnu/bits/wordsize.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
   /usr/include/x86_64-linux-gnu/c++/13/bits/cpu_defines.h \
@@ -1718,8 +1773,6 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/lib/gcc/x86_64-linux-gnu/13/include/cmpccxaddintrin.h:
 
-/usr/lib/gcc/x86_64-linux-gnu/13/include/clwbintrin.h:
-
 /usr/lib/gcc/x86_64-linux-gnu/13/include/cldemoteintrin.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/13/include/bmiintrin.h:
@@ -1755,8 +1808,6 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 /usr/lib/gcc/x86_64-linux-gnu/13/include/avx512bf16intrin.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/13/include/avx5124vnniwintrin.h:
-
-/usr/lib/gcc/x86_64-linux-gnu/13/include/avx2intrin.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/13/include/amxtileintrin.h:
 
@@ -1828,10 +1879,6 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/x86_64-linux-gnu/bits/types/cookie_io_functions_t.h:
 
-/usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h:
-
-/usr/include/x86_64-linux-gnu/bits/types/clockid_t.h:
-
 /usr/include/x86_64-linux-gnu/bits/types/clock_t.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h:
@@ -1850,11 +1897,29 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/x86_64-linux-gnu/bits/struct_mutex.h:
 
+/usr/include/x86_64-linux-gnu/bits/strings_fortified.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/13/include/avx2intrin.h:
+
+/usr/include/x86_64-linux-gnu/bits/string_fortified.h:
+
 /usr/include/x86_64-linux-gnu/bits/stdlib-float.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/clockid_t.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h:
 
 /usr/include/x86_64-linux-gnu/bits/timex.h:
 
 /usr/include/x86_64-linux-gnu/bits/stdio_lim.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/13/include/clwbintrin.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdio.h:
 
 /usr/include/x86_64-linux-gnu/c++/13/bits/gthr-default.h:
 
@@ -1868,11 +1933,17 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/x86_64-linux-gnu/bits/select.h:
 
+/usr/include/x86_64-linux-gnu/bits/select-decl.h:
+
 /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/ompi/mpi/cxx/file.h:
 
 /usr/include/x86_64-linux-gnu/bits/sched.h:
 
 /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h:
+
+/usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h:
+
+/usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h:
 
 /usr/include/c++/13/bits/stl_bvector.h:
 
@@ -1885,6 +1956,8 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 /usr/include/c++/13/cstddef:
 
 /usr/include/c++/13/bits/shared_ptr_atomic.h:
+
+/usr/include/x86_64-linux-gnu/bits/wchar2-decl.h:
 
 /usr/include/c++/13/bits/erase_if.h:
 
@@ -1902,23 +1975,17 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/SDL2/SDL_main.h:
 
+/usr/include/x86_64-linux-gnu/bits/stdio2-decl.h:
+
 /usr/include/c++/13/bits/ptr_traits.h:
 
 /usr/include/c++/13/bits/uses_allocator.h:
-
-/usr/include/x86_64-linux-gnu/bits/mathcalls-narrow.h:
 
 /usr/include/c++/13/bits/ostream_insert.h:
 
 /usr/include/c++/13/math.h:
 
 /usr/include/c++/13/bits/ostream.tcc:
-
-/usr/include/c++/13/bits/stl_function.h:
-
-/usr/lib/gcc/x86_64-linux-gnu/13/include/hresetintrin.h:
-
-/usr/include/c++/13/tr1/beta_function.tcc:
 
 /usr/lib/gcc/x86_64-linux-gnu/13/include/avxneconvertintrin.h:
 
@@ -1986,19 +2053,9 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/x86_64-linux-gnu/asm/errno.h:
 
-/usr/include/c++/13/bits/concept_check.h:
-
-/usr/include/c++/13/bits/alloc_traits.h:
-
-/usr/include/c++/13/bits/atomic_base.h:
-
-/usr/include/c++/13/bits/uses_allocator_args.h:
-
 /usr/include/c++/13/clocale:
 
-/usr/include/x86_64-linux-gnu/bits/long-double.h:
-
-/usr/include/c++/13/bits/algorithmfwd.h:
+/usr/include/x86_64-linux-gnu/bits/wchar2.h:
 
 /usr/include/x86_64-linux-gnu/bits/fp-logb.h:
 
@@ -2034,7 +2091,29 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/asm-generic/errno.h:
 
-/usr/include/SDL2/SDL_loadso.h:
+/usr/include/c++/13/bits/hash_bytes.h:
+
+/usr/include/x86_64-linux-gnu/bits/math-vector.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/13/include/clflushoptintrin.h:
+
+/usr/include/c++/13/array:
+
+/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/ompi/mpi/cxx/errhandler.h:
+
+/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/fractal_land.hpp:
+
+/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/ompi/mpi/cxx/intercomm_inln.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/13/include/serializeintrin.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/13/include/avx512vp2intersectvlintrin.h:
+
+/usr/include/c++/13/bits/stl_iterator_base_funcs.h:
+
+/usr/include/asm-generic/errno-base.h:
+
+/usr/include/alloca.h:
 
 /usr/include/assert.h:
 
@@ -2062,14 +2141,6 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/c++/13/bits/stl_map.h:
 
-/usr/lib/gcc/x86_64-linux-gnu/13/include/wbnoinvdintrin.h:
-
-/usr/include/SDL2/SDL_thread.h:
-
-/usr/include/c++/13/bits/new_allocator.h:
-
-/usr/include/c++/13/bits/stl_uninitialized.h:
-
 /usr/include/x86_64-linux-gnu/bits/endianness.h:
 
 /usr/include/c++/13/bits/chrono.h:
@@ -2082,11 +2153,31 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/SDL2/SDL_haptic.h:
 
-/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/window.hpp:
-
 /usr/include/x86_64-linux-gnu/bits/mathcalls.h:
 
+/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/window.hpp:
+
 /usr/include/c++/13/bits/stl_relops.h:
+
+/usr/include/c++/13/bits/concept_check.h:
+
+/usr/include/c++/13/bits/alloc_traits.h:
+
+/usr/include/c++/13/bits/atomic_base.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/13/include/wbnoinvdintrin.h:
+
+/usr/include/SDL2/SDL_thread.h:
+
+/usr/include/c++/13/bits/stl_uninitialized.h:
+
+/usr/include/c++/13/bits/new_allocator.h:
+
+/usr/include/c++/13/bits/uses_allocator_args.h:
+
+/usr/include/c++/13/bits/algorithmfwd.h:
+
+/usr/include/x86_64-linux-gnu/bits/long-double.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/timer_t.h:
 
@@ -2130,28 +2221,6 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/c++/13/bits/stl_vector.h:
 
-/usr/include/c++/13/bits/hash_bytes.h:
-
-/usr/include/x86_64-linux-gnu/bits/math-vector.h:
-
-/usr/lib/gcc/x86_64-linux-gnu/13/include/clflushoptintrin.h:
-
-/usr/include/c++/13/array:
-
-/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/ompi/mpi/cxx/errhandler.h:
-
-/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/fractal_land.hpp:
-
-/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/ompi/mpi/cxx/intercomm_inln.h:
-
-/usr/lib/gcc/x86_64-linux-gnu/13/include/serializeintrin.h:
-
-/usr/lib/gcc/x86_64-linux-gnu/13/include/avx512vp2intersectvlintrin.h:
-
-/usr/include/c++/13/bits/stl_iterator_base_funcs.h:
-
-/usr/include/asm-generic/errno-base.h:
-
 /usr/include/c++/13/bits/predefined_ops.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/13/include/prfchwintrin.h:
@@ -2165,12 +2234,6 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 /usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h:
 
 /usr/include/c++/13/bits/unique_ptr.h:
-
-/usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h:
-
-/usr/include/c++/13/bits/utility.h:
-
-/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/pheronome.hpp:
 
 /home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/basic_types.hpp:
 
@@ -2232,11 +2295,15 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/SDL2/SDL_audio.h:
 
+/usr/include/SDL2/SDL_loadso.h:
+
 /usr/include/SDL2/SDL_log.h:
 
 /usr/include/c++/13/bits/functional_hash.h:
 
 /usr/include/SDL2/SDL_endian.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdlib.h:
 
 /usr/include/SDL2/SDL_metal.h:
 
@@ -2250,6 +2317,12 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/SDL2/SDL_platform.h:
 
+/usr/include/SDL2/SDL_blendmode.h:
+
+/usr/include/c++/13/bits/requires_hosted.h:
+
+/usr/include/x86_64-linux-gnu/bits/floatn-common.h:
+
 /usr/include/SDL2/SDL_keycode.h:
 
 /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h:
@@ -2262,12 +2335,6 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/c++/13/tr1/riemann_zeta.tcc:
 
-/usr/include/SDL2/SDL_blendmode.h:
-
-/usr/include/c++/13/bits/requires_hosted.h:
-
-/usr/include/x86_64-linux-gnu/bits/floatn-common.h:
-
 /usr/lib/gcc/x86_64-linux-gnu/13/include/amxcomplexintrin.h:
 
 /usr/include/SDL2/SDL_render.h:
@@ -2279,6 +2346,10 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 /usr/include/SDL2/SDL_quit.h:
 
 /usr/include/SDL2/SDL_shape.h:
+
+/usr/include/SDL2/SDL_rwops.h:
+
+/usr/include/c++/13/bits/vector.tcc:
 
 /usr/lib/gcc/x86_64-linux-gnu/13/include/avx512bwintrin.h:
 
@@ -2295,8 +2366,6 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 /usr/include/SDL2/SDL_surface.h:
 
 /usr/include/c++/13/bits/stl_raw_storage_iter.h:
-
-/usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h:
 
 /usr/include/c++/13/bits/ios_base.h:
 
@@ -2322,7 +2391,17 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/strings.h:
 
-/usr/include/alloca.h:
+/usr/include/c++/13/bits/stl_function.h:
+
+/usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h:
+
+/home/santiago/OS202/AntProblem/ParallelAntColony_DomainPartitioning/include/pheronome.hpp:
+
+/usr/include/c++/13/bits/utility.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/13/include/hresetintrin.h:
+
+/usr/include/c++/13/tr1/beta_function.tcc:
 
 /usr/include/SDL2/SDL_cpuinfo.h:
 
@@ -2352,10 +2431,6 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 
 /usr/include/c++/13/bits/uniform_int_dist.h:
 
-/usr/include/SDL2/SDL_rwops.h:
-
-/usr/include/c++/13/bits/vector.tcc:
-
 /usr/lib/gcc/x86_64-linux-gnu/13/include/avxvnniintrin.h:
 
 /usr/include/c++/13/bits/cpp_type_traits.h:
@@ -2373,6 +2448,8 @@ CMakeFiles/ant_simu.dir/src/window.cpp.o: /home/santiago/OS202/AntProblem/Parall
 /usr/lib/gcc/x86_64-linux-gnu/13/include/cetintrin.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/13/include/avx512vlintrin.h:
+
+/usr/include/x86_64-linux-gnu/bits/select2.h:
 
 /usr/include/c++/13/cmath:
 

@@ -1,18 +1,18 @@
 # Activités du projet:
 
 ## Avant de faire la parallelisation
-- [X] Mesure du temps passer par itération:
-  - [X] Mesures dans les étapes de render 
-  - [X] Adapter les mesures pour analyser son développement
-- [X] Vectorisation:
-  - [x] Création de la classe Population (qui stocke les données des fourmis) 
+- [ ] Mesure du temps passer par itération:
+  - [ ] Mesures dans les étapes de render 
+  - [ ] Adapter les mesures pour analyser son développement
+- [ ] Vectorisation:
+  - [x] Modification de la classe Population pour ant inter-domaine migration (qui stocke les données des fourmis) 
   - [X] Adaptation du Renderer
   - [X] Adaptation de la Simulation
-- [X] Parallelisation en utilisant l'OpenMP
-  - [X] Parallelisation du Renderer
+- [X] Parallelisation en utilisant MPI 1 renderer and workers
+  - [X] Fractal land modification pour supporter multiple doimaines
   - [X] Parallelisation de la Simulation
 - [ ] Time analysis for each case
-  - [ ] Comparison between OpenMP and deafult case
+  - [ ] Comparison between OpenMP and deafult case and MPI 
   
 
   
