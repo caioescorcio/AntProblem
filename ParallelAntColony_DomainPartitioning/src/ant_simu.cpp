@@ -37,21 +37,15 @@ static void advance_time(const fractal_land& land,
     phen.update();
 }
 
-/**
- * @brief Exchange halo/ghost cells between neighboring worker ranks (2D Cartesian grid).
- *
- * Notes:
- * - This updates ghost cells of the local LAND grid (double grid).
- * - If land is static, exchanging it every iteration is unnecessary; keep it only if you later
- *   exchange dynamic fields (e.g., pheromones) using the same pattern.
- */
-static void update_ghost_cells(fractal_land& land,
-                              MPI_Comm cart_workers,
-                              int overlap)
-{
-    if (cart_workers == MPI_COMM_NULL) return;
 
-    // Neighbor ranks in the Cartesian communicator
+
+
+
+//Pheromones in ghost cells exchange 
+static void update_ghost_pheromones(pheronome& phen,const fractal_land& land,MPI_Comm cart_workers,int overlap)
+{
+    if (cart_workers == MPI_COMM_NULL || overlap <= 0) return;
+
     int nbr_xm = MPI_PROC_NULL, nbr_xp = MPI_PROC_NULL;
     int nbr_ym = MPI_PROC_NULL, nbr_yp = MPI_PROC_NULL;
 
@@ -59,83 +53,104 @@ static void update_ghost_cells(fractal_land& land,
     MPI_Cart_shift(cart_workers, 0, 1, &nbr_xm, &nbr_xp);
     MPI_Cart_shift(cart_workers, 1, 1, &nbr_ym, &nbr_yp);
 
-    const int dimx = static_cast<int>(land.dimensions()); // columns in local storage
-    const int dimy = static_cast<int>(land.height());     // rows in local storage
-
+    const int dimx    = static_cast<int>(land.dimensions());
+    const int dimy    = static_cast<int>(land.height());
     const int owned_w = static_cast<int>(land.owned_dimensions());
     const int owned_h = static_cast<int>(land.owned_height());
 
-    const int ox = overlap; // owned region starts at (ox, oy) inside storage
-    const int oy = overlap;
+    // Actual owned block origin inside local storage (with halos)
+    const int ox = static_cast<int>(land.inner_x_begin());
+    const int oy = static_cast<int>(land.inner_y_begin());
 
-    // Quick sanity checks
-    if (dimx <= 2 * overlap || dimy <= 2 * overlap) return;
     if (owned_w <= 0 || owned_h <= 0) return;
-    if (ox + owned_w + overlap > dimx) return;
-    if (oy + owned_h + overlap > dimy) return;
+    if (ox < 0 || oy < 0 || ox + owned_w > dimx || oy + owned_h > dimy) return;
 
-    double* a = land.data();
+    const int halo_left   = ox;
+    const int halo_right  = dimx - (ox + owned_w);
+    const int halo_top    = oy;
+    const int halo_bottom = dimy - (oy + owned_h);
 
-    // Column band: owned_h rows, each row has 'overlap' elements, with stride dimx
-    MPI_Datatype col_band = MPI_DATATYPE_NULL;
-    MPI_Type_vector(owned_h, overlap, dimx, MPI_DOUBLE, &col_band);
-    MPI_Type_commit(&col_band);
+    const int wL = std::min(overlap, halo_left);
+    const int wR = std::min(overlap, halo_right);
+    const int hT = std::min(overlap, halo_top);
+    const int hB = std::min(overlap, halo_bottom);
 
-    // Row band: overlap rows, each row has 'owned_w' elements, with stride dimx
-    MPI_Datatype row_band = MPI_DATATYPE_NULL;
-    MPI_Type_vector(overlap, owned_w, dimx, MPI_DOUBLE, &row_band);
-    MPI_Type_commit(&row_band);
+    // Packs a rectangular region into a contiguous buffer: [food, nest, food, nest, ...]
+    auto pack_rect = [&](int x0, int y0, int w, int h, std::vector<double>& out) {
+        out.resize(static_cast<std::size_t>(w) * static_cast<std::size_t>(h) * 2ULL);
+        std::size_t k = 0;
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                const auto& c = phen(static_cast<unsigned long>(x0 + x),
+                                     static_cast<unsigned long>(y0 + y));
+                out[k++] = c[0]; // food pheromone
+                out[k++] = c[1]; // nest pheromone
+            }
+        }
+    };
 
-    MPI_Request reqs[16];
-    int r = 0;
+    // Unpacks contiguous buffer back into a rectangular region
+    auto unpack_rect = [&](int x0, int y0, int w, int h, const std::vector<double>& in) {
+        std::size_t k = 0;
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                auto& c = phen(static_cast<unsigned long>(x0 + x),
+                               static_cast<unsigned long>(y0 + y));
+                c[0] = in[k++];
+                c[1] = in[k++];
+            }
+        }
+    };
 
-    // Left exchange
-    if (nbr_xm != MPI_PROC_NULL) {
-        // recv into left ghost band at x = ox - overlap
-        MPI_Irecv(a + oy * dimx + (ox - overlap), 1, col_band, nbr_xm, 200, cart_workers, &reqs[r++]);
-        // send left owned band at x = ox
-        MPI_Isend(a + oy * dimx + ox,             1, col_band, nbr_xm, 201, cart_workers, &reqs[r++]);
+    constexpr int tag_x_to_minus = 410;
+    constexpr int tag_x_to_plus  = 411;
+    constexpr int tag_y_to_minus = 412;
+    constexpr int tag_y_to_plus  = 413;
+
+    std::vector<double> send_buf, recv_buf;
+
+    // Exchange with left neighbor: send left owned band, receive into left ghost band
+    if (nbr_xm != MPI_PROC_NULL && wL > 0) {
+        pack_rect(ox, oy, wL, owned_h, send_buf);
+        recv_buf.resize(send_buf.size());
+        MPI_Sendrecv(send_buf.data(), static_cast<int>(send_buf.size()), MPI_DOUBLE, nbr_xm, tag_x_to_minus,
+                     recv_buf.data(), static_cast<int>(recv_buf.size()), MPI_DOUBLE, nbr_xm, tag_x_to_plus,
+                     cart_workers, MPI_STATUS_IGNORE);
+        unpack_rect(ox - wL, oy, wL, owned_h, recv_buf);
     }
 
-    // Right exchange
-    if (nbr_xp != MPI_PROC_NULL) {
-        // recv into right ghost band at x = ox + owned_w
-        MPI_Irecv(a + oy * dimx + (ox + owned_w),           1, col_band, nbr_xp, 201, cart_workers, &reqs[r++]);
-        // send right owned band at x = ox + owned_w - overlap
-        MPI_Isend(a + oy * dimx + (ox + owned_w - overlap), 1, col_band, nbr_xp, 200, cart_workers, &reqs[r++]);
+    // Exchange with right neighbor: send right owned band, receive into right ghost band
+    if (nbr_xp != MPI_PROC_NULL && wR > 0) {
+        pack_rect(ox + owned_w - wR, oy, wR, owned_h, send_buf);
+        recv_buf.resize(send_buf.size());
+        MPI_Sendrecv(send_buf.data(), static_cast<int>(send_buf.size()), MPI_DOUBLE, nbr_xp, tag_x_to_plus,
+                     recv_buf.data(), static_cast<int>(recv_buf.size()), MPI_DOUBLE, nbr_xp, tag_x_to_minus,
+                     cart_workers, MPI_STATUS_IGNORE);
+        unpack_rect(ox + owned_w, oy, wR, owned_h, recv_buf);
     }
 
-    // Up exchange
-    if (nbr_ym != MPI_PROC_NULL) {
-        // recv into top ghost band at y = oy - overlap
-        MPI_Irecv(a + (oy - overlap) * dimx + ox, 1, row_band, nbr_ym, 202, cart_workers, &reqs[r++]);
-        // send top owned band at y = oy
-        MPI_Isend(a + oy * dimx + ox,             1, row_band, nbr_ym, 203, cart_workers, &reqs[r++]);
+    // Exchange with upper neighbor: send top owned band, receive into top ghost band
+    if (nbr_ym != MPI_PROC_NULL && hT > 0) {
+        pack_rect(ox, oy, owned_w, hT, send_buf);
+        recv_buf.resize(send_buf.size());
+        MPI_Sendrecv(send_buf.data(), static_cast<int>(send_buf.size()), MPI_DOUBLE, nbr_ym, tag_y_to_minus,
+                     recv_buf.data(), static_cast<int>(recv_buf.size()), MPI_DOUBLE, nbr_ym, tag_y_to_plus,
+                     cart_workers, MPI_STATUS_IGNORE);
+        unpack_rect(ox, oy - hT, owned_w, hT, recv_buf);
     }
 
-    // Down exchange
-    if (nbr_yp != MPI_PROC_NULL) {
-        // recv into bottom ghost band at y = oy + owned_h
-        MPI_Irecv(a + (oy + owned_h) * dimx + ox,            1, row_band, nbr_yp, 203, cart_workers, &reqs[r++]);
-        // send bottom owned band at y = oy + owned_h - overlap
-        MPI_Isend(a + (oy + owned_h - overlap) * dimx + ox,  1, row_band, nbr_yp, 202, cart_workers, &reqs[r++]);
+    // Exchange with lower neighbor: send bottom owned band, receive into bottom ghost band
+    if (nbr_yp != MPI_PROC_NULL && hB > 0) {
+        pack_rect(ox, oy + owned_h - hB, owned_w, hB, send_buf);
+        recv_buf.resize(send_buf.size());
+        MPI_Sendrecv(send_buf.data(), static_cast<int>(send_buf.size()), MPI_DOUBLE, nbr_yp, tag_y_to_plus,
+                     recv_buf.data(), static_cast<int>(recv_buf.size()), MPI_DOUBLE, nbr_yp, tag_y_to_minus,
+                     cart_workers, MPI_STATUS_IGNORE);
+        unpack_rect(ox, oy + owned_h, owned_w, hB, recv_buf);
     }
-
-    if (r > 0) {
-        MPI_Waitall(r, reqs, MPI_STATUSES_IGNORE);
-    }
-
-    MPI_Type_free(&col_band);
-    MPI_Type_free(&row_band);
 }
 
-/**
- * @brief Pack owned (non-ghost) pheromone values into contiguous buffers (two components).
- *
- * We send only the owned region to root (no halo) to avoid overlaps.
- * Layout in buffers is row-major over the owned region:
- *   idx = (y_owned * owned_w + x_owned)
- */
+
 static void pack_owned_pheromones(const pheronome& phen,
                                  int owned_w, int owned_h,
                                  int overlap,
@@ -157,15 +172,7 @@ static void pack_owned_pheromones(const pheronome& phen,
     }
 }
 
-/**
- * @brief Build MPI subarray datatypes to place each worker's owned tile directly into root global arrays.
- *
- * Root will Irecv into:
- *   global_pher_food.data() with recv_type[world_rank]
- *   global_pher_nest.data() with recv_type[world_rank]
- *
- * Workers will Send contiguous buffers of size owned_w * owned_h doubles.
- */
+
 static void build_root_pheromone_recv_types(std::vector<MPI_Datatype>& recv_types,
                                            int nbp,
                                            int w_nbp,
@@ -203,6 +210,142 @@ static void build_root_pheromone_recv_types(std::vector<MPI_Datatype>& recv_type
         MPI_Type_commit(&recv_types[world_src]);
     }
 }
+
+//structure for ant migrations
+struct AntMsg {
+    int gx;
+    int gy;
+    int loaded_flag;
+    std::uint64_t seed;
+};
+
+
+static void migrate_ants(Population& ants, const fractal_land& land, MPI_Comm cart_workers, int overlap)
+{
+    if (cart_workers == MPI_COMM_NULL || overlap <= 0) return;
+
+    int nbr_xm = MPI_PROC_NULL, nbr_xp = MPI_PROC_NULL;
+    int nbr_ym = MPI_PROC_NULL, nbr_yp = MPI_PROC_NULL;
+
+    // direction 0 = x, direction 1 = y
+    MPI_Cart_shift(cart_workers, 0, 1, &nbr_xm, &nbr_xp);
+    MPI_Cart_shift(cart_workers, 1, 1, &nbr_ym, &nbr_yp);
+
+    const int dimx    = static_cast<int>(land.dimensions());
+    const int dimy    = static_cast<int>(land.height());
+    const int owned_w = static_cast<int>(land.owned_dimensions());
+    const int owned_h = static_cast<int>(land.owned_height());
+
+    // Actual owned block origin inside local storage (with halos)
+    const int ox = static_cast<int>(land.inner_x_begin());
+    const int oy = static_cast<int>(land.inner_y_begin());
+
+    if (owned_w <= 0 || owned_h <= 0) return;
+    if (ox < 0 || oy < 0 || ox + owned_w > dimx || oy + owned_h > dimy) return;
+
+    const int halo_left   = ox;
+    const int halo_right  = dimx - (ox + owned_w);
+    const int halo_top    = oy;
+    const int halo_bottom = dimy - (oy + owned_h);
+
+    // Effective halo width per side for this rank
+    const int wL = std::min(overlap, halo_left);
+    const int wR = std::min(overlap, halo_right);
+    const int hT = std::min(overlap, halo_top);
+    const int hB = std::min(overlap, halo_bottom);
+
+    // 0 = left, 1 = right, 2 = up, 3 = down
+    std::array<std::vector<AntMsg>, 4> send_bins;
+    std::array<std::vector<AntMsg>, 4> recv_bins;
+
+    // Extract ants currently in halos and prepare outgoing messages
+    // Reverse iteration is required because destroy_ant swaps with back.
+    for (int i = static_cast<int>(ants.get_size()) - 1; i >= 0; --i) {
+        const position_t p = ants.get_position(i);
+
+        int side = -1;
+        if (wL > 0 && p.x < ox) side = 0;
+        else if (wR > 0 && p.x >= ox + owned_w) side = 1;
+        else if (hT > 0 && p.y < oy) side = 2;
+        else if (hB > 0 && p.y >= oy + owned_h) side = 3;
+        else continue; // still inside owned region
+
+        int dst = MPI_PROC_NULL;
+        if (side == 0) dst = nbr_xm;
+        if (side == 1) dst = nbr_xp;
+        if (side == 2) dst = nbr_ym;
+        if (side == 3) dst = nbr_yp;
+
+        if (dst != MPI_PROC_NULL) {
+            AntMsg msg{};
+            msg.gx = static_cast<int>(land.storage_x_offset()) + p.x;
+            msg.gy = static_cast<int>(land.storage_y_offset()) + p.y;
+            msg.loaded_flag = ants.is_loaded(i) ? 1 : 0;
+            msg.seed = static_cast<std::uint64_t>(ants.get_seed(i));
+            send_bins[side].push_back(msg);
+        }
+
+        // Remove local ant even if no neighbor exists (global boundary drop policy)
+        ants.destroy_ant(i);
+    }
+
+    auto exchange_dir = [&](int nbr,
+                            int cnt_send_tag, int cnt_recv_tag,
+                            int data_send_tag, int data_recv_tag,
+                            std::vector<AntMsg>& send_buf,
+                            std::vector<AntMsg>& recv_buf)
+    {
+        if (nbr == MPI_PROC_NULL) return;
+
+        int send_n = static_cast<int>(send_buf.size());
+        int recv_n = 0;
+
+        // First exchange message counts
+        MPI_Sendrecv(&send_n, 1, MPI_INT, nbr, cnt_send_tag,
+                     &recv_n, 1, MPI_INT, nbr, cnt_recv_tag,
+                     cart_workers, MPI_STATUS_IGNORE);
+
+        recv_buf.resize(static_cast<std::size_t>(recv_n));
+
+        // Then exchange payload as raw bytes
+        MPI_Sendrecv(send_buf.data(), send_n * static_cast<int>(sizeof(AntMsg)), MPI_BYTE, nbr, data_send_tag,
+                     recv_buf.data(), recv_n * static_cast<int>(sizeof(AntMsg)), MPI_BYTE, nbr, data_recv_tag,
+                     cart_workers, MPI_STATUS_IGNORE);
+    };
+
+    // Count tags
+    constexpr int C_XM = 700, C_XP = 701, C_YM = 702, C_YP = 703;
+    // Data tags
+    constexpr int D_XM = 710, D_XP = 711, D_YM = 712, D_YP = 713;
+
+    // Left/right exchanges
+    exchange_dir(nbr_xm, C_XM, C_XP, D_XM, D_XP, send_bins[0], recv_bins[0]);
+    exchange_dir(nbr_xp, C_XP, C_XM, D_XP, D_XM, send_bins[1], recv_bins[1]);
+
+    // Up/down exchanges
+    exchange_dir(nbr_ym, C_YM, C_YP, D_YM, D_YP, send_bins[2], recv_bins[2]);
+    exchange_dir(nbr_yp, C_YP, C_YM, D_YP, D_YM, send_bins[3], recv_bins[3]);
+
+    // Insert received ants in local storage coordinates
+    for (const auto& bin : recv_bins) {
+        for (const auto& msg : bin) {
+            const int lx = msg.gx - static_cast<int>(land.storage_x_offset());
+            const int ly = msg.gy - static_cast<int>(land.storage_y_offset());
+
+            if (lx < 0 || ly < 0 ||
+                lx >= static_cast<int>(land.dimensions()) ||
+                ly >= static_cast<int>(land.height())) {
+                continue;
+            }
+
+            ants.new_ant({lx, ly},
+                         (msg.loaded_flag == 1) ? loaded : unloaded,
+                         static_cast<std::size_t>(msg.seed));
+        }
+    }
+}
+
+
 
 int main(int argc, char** argv)
 {
@@ -516,9 +659,10 @@ int main(int argc, char** argv)
             advance_time(*local_land, *phen,
                          pos_nest_local_safe, pos_food_local_safe,
                          food_quantity, *ants);
-
+            //Ants in the Halo migrated
+            migrate_ants(*ants, *local_land, cart_workers, overlap);
             // Halo exchange (currently on LAND; keep it here if you later exchange dynamic fields)
-            update_ghost_cells(*local_land, cart_workers, overlap);
+            update_ghost_pheromones(*phen, *local_land, cart_workers, overlap);
 
             // Pack and send pheromones (owned region only) to root for rendering/aggregation
             const int owned_w = static_cast<int>(local_land->owned_dimensions());

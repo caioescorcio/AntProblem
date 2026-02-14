@@ -15,7 +15,8 @@ class Population {
         std::vector<std::size_t> seeds;
         double m_eps;
     
-    public:
+    public:       
+        std::size_t get_seed(int index) const { return seeds[index]; }
 
         Population(int capacity) : m_size(0) { // start with 0 active ants
             positions.reserve(capacity);
