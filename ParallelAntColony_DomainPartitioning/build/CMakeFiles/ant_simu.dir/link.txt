@@ -1,0 +1,1 @@
+/usr/bin/mpicxx CMakeFiles/ant_simu.dir/src/population.cpp.o CMakeFiles/ant_simu.dir/src/ant_simu.cpp.o CMakeFiles/ant_simu.dir/src/fractal_land.cpp.o CMakeFiles/ant_simu.dir/src/renderer.cpp.o CMakeFiles/ant_simu.dir/src/window.cpp.o -o ant_simu  /usr/lib/x86_64-linux-gnu/libSDL2main.a /usr/lib/x86_64-linux-gnu/libSDL2.so 
