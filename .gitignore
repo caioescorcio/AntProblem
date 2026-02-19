@@ -40,4 +40,8 @@
 # debug information files
 *.dwo
 
+# build
+build
+external
+
 parallelisation/build
