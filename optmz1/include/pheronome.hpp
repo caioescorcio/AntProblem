@@ -65,9 +65,13 @@ public:
 
     // DEBUG accessor for buffer - REMOVED
 
-    void do_evaporation( ) {
+    void do_evaporation( int rank, int nbp ) {
+        // Each rank evaporates only its portion of rows
+        std::size_t rows_per_rank = m_dim / nbp;
+        std::size_t start_row = rank * rows_per_rank + 1; // +1 for ghost cell offset
+        std::size_t end_row = (rank == nbp - 1) ? m_dim : (start_row + rows_per_rank - 1);
         #pragma omp parallel for
-        for ( std::size_t i = 1; i <= m_dim; ++i )
+        for ( std::size_t i = start_row; i <= end_row; ++i )
             for ( std::size_t j = 1; j <= m_dim; ++j ) {
                 m_buffer_pheronome[i * m_stride + j][0] *= m_beta;
                 m_buffer_pheronome[i * m_stride + j][1] *= m_beta;
@@ -115,12 +119,21 @@ public:
     void synchronize() {
         // Synchronize the buffer (which contains new pheromone values) across all processes
         // We use MPI_MAX because if any process found a strong pheromone, others should know.
-        // If a process didn't visit a cell, its local value is decayed, which is smaller than "new" value.
         static_assert(sizeof(pheronome_t) == 2 * sizeof(double), "pheronome_t layout assumption failed");
         
         MPI_Allreduce(MPI_IN_PLACE, m_buffer_pheronome.data(), 
                       2 * m_buffer_pheronome.size(), 
                       MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    }
+
+    void synchronize_evaporation() {
+        // After distributed evaporation, merge results across ranks.
+        // Each rank evaporated only its rows (value *= beta, so value decreases).
+        // Non-evaporated rows on a rank still have the pre-evaporation value (higher).
+        // MPI_MIN picks the correctly evaporated (lower) value from the owning rank.
+        MPI_Allreduce(MPI_IN_PLACE, m_buffer_pheronome.data(), 
+                      2 * m_buffer_pheronome.size(), 
+                      MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
     }
 
 private:

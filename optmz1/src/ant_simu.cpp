@@ -15,7 +15,8 @@
 
 void advance_time( const fractal_land& land, pheronome& phen, 
                    const position_t& pos_nest, const position_t& pos_food,
-                std::size_t& cpteur , Population& pop, int rank, int nbp)
+                std::size_t& cpteur , Population& pop, int rank, int nbp,
+                TimeCounter& counter)
 {
     // Local processing of ants
     // Note: each process only has its slice of ants in 'pop' now
@@ -40,10 +41,15 @@ void advance_time( const fractal_land& land, pheronome& phen,
     */
     
     // Synchronize pheromones across all processes (before evaporation)
+    counter.start_mpi_sync();
     phen.synchronize();
+    counter.end_mpi_sync();
     
-    // Pheromone evaporation (all processes do it on their full map)
-    phen.do_evaporation();
+    // Pheromone evaporation (each process handles its portion of the map)
+    counter.start_evaporation();
+    phen.do_evaporation(rank, nbp);
+    phen.synchronize_evaporation(); // merge distributed evaporation via MPI_MIN
+    counter.end_evaporation();
     
     phen.update(); 
 }
@@ -138,7 +144,7 @@ int main(int nargs, char* argv[])
         // Track food delivered THIS iteration only (delta approach)
         size_t food_before = food_quantity;
         counter.start_advance();
-        advance_time( land, phen, pos_nest, pos_food, food_quantity, ants, rank, nbp);
+        advance_time( land, phen, pos_nest, pos_food, food_quantity, ants, rank, nbp, counter);
         counter.end_advance();
         
         // Sum only NEW deliveries this step across all processes
@@ -148,6 +154,7 @@ int main(int nargs, char* argv[])
         food_quantity = food_before + global_delta;  // consistent on all ranks
 
         // Gather all ant positions to rank 0 for display (2 ints per ant: x, y)
+        counter.start_mpi_gather();
         std::vector<int> local_pos(nb_ants * 2);
         for (int i = 0; i < nb_ants; ++i) {
             local_pos[2*i]   = ants.get_position(i).x;
@@ -161,6 +168,7 @@ int main(int nargs, char* argv[])
             for (int i = 0; i < nb_ants_total; ++i)
                 disp_ants.set_position(i, {all_pos[2*i], all_pos[2*i+1]});
         }
+        counter.end_mpi_gather();
 
         if (rank == 0) {
             counter.start_food();
