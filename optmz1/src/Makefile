@@ -21,7 +21,13 @@ MPI_LIB = -L"$(MSMPI_LIB_DIR)" -lmsmpi
 # ---------------------------------------------------------------
 CXX = g++
 
-CXXFLAGS = -std=c++17 -I$(INCDIR) $(SDL2_INC) $(MPI_INC)
+# OpenMP is optional — enable with: mingw32-make all OPENMP=yes
+# (requires a MinGW build with pthread support)
+ifdef OPENMP
+OMPFLAGS = -fopenmp
+endif
+
+CXXFLAGS = -std=c++17 -I$(INCDIR) $(SDL2_INC) $(MPI_INC) $(OMPFLAGS)
 
 ifdef DEBUG
 CXXFLAGS += -g -O0 -pedantic -D_GLIBCXX_DEBUG

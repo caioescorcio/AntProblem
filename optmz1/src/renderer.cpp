@@ -62,10 +62,9 @@ void Renderer::display( Window& win, std::size_t const& compteur )
     SDL_SetRenderDrawBlendMode( renderer, SDL_BLENDMODE_BLEND );
     
     // Affichage des fourmis dans le cadran en haut à gauche :
-    for ( size_t i = 0; i < m_ref_pop.get_size(); i++ ) {
-        const position_t& pos_ant = m_ref_pop.get_position(i);
+    for ( std::size_t i = 0; i < m_ref_pop.size(); i++ ) {
         win.set_pen( 0, 255, 255 );
-        win.pset( static_cast<int>( pos_ant.x ), static_cast<int>( pos_ant.y ) );
+        win.pset( m_ref_pop.pos_x(i), m_ref_pop.pos_y(i) );
     }
     
     // Affichage des phéronomes dans le cadran en haut à droite :
@@ -101,6 +100,5 @@ void Renderer::display( Window& win, std::size_t const& compteur )
         }
     }
     
-    // Présenter le rendu (double buffering)
-    SDL_RenderPresent( renderer );
+    // NOTE: SDL_RenderPresent is NOT called here — the caller uses win.blit() for separate timing.
 }

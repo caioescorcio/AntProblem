@@ -1,75 +1,64 @@
-# ifndef _POPULATION_HPP_
-# define _POPULATION_HPP_
-# include <utility>
-# include "fractal_land.hpp"
-# include "pheronome.hpp"
-# include "basic_types.hpp"
+#ifndef POPULATION_HPP
+#define POPULATION_HPP
 
-enum state { unloaded = 0, loaded = 1 };
+#include <cstddef>
+#include <cstdint>
+#include <vector>
+
+#include "basic_types.hpp"
+#include "fractal_land.hpp"
+#include "pheronome.hpp"
 
 class Population {
-    private:
-        int m_size;
-        std::vector<position_t> positions;
-        std::vector<state> states;
-        std::vector<std::size_t> seeds;
-        double m_eps;
-    
-    public:
+public:
+    static constexpr std::uint8_t unloaded = 0;
+    static constexpr std::uint8_t loaded = 1;
 
-        Population(int capacity) : m_size(0) { // start with 0 active ants
-            positions.reserve(capacity);
-            states.reserve(capacity);
-            seeds.reserve(capacity);
-            m_eps = 0;
-        }
+    Population() = default;
 
-        ~Population() = default;
+    void reserve(std::size_t count) {
+        m_pos_x.reserve(count);
+        m_pos_y.reserve(count);
+        m_state.reserve(count);
+        m_seed.reserve(count);
+    }
 
-        void new_ant(position_t pos, state st, std::size_t seed){   // returns void because its id is not important
-            positions.push_back(pos);
-            states.push_back(st);
-            seeds.push_back(seed);
-            m_size++;
-        }
-        
-        void clone_ant(int index) {
-            new_ant(positions[index], states[index], seeds[index]);
-        }
+    void add_ant(const position_t& pos, std::size_t seed) {
+        m_pos_x.push_back(pos.x);
+        m_pos_y.push_back(pos.y);
+        m_state.push_back(unloaded);
+        m_seed.push_back(seed);
+    }
 
-        void destroy_ant(int index) {
-            if (index >= (int)this->positions.size()) return;
+    std::size_t size() const { return m_pos_x.size(); }
 
-            positions[index] = positions.back();        // vector[index] = vector[n-1] 
-            states[index] = states.back();
-            seeds[index] = seeds.back();
+    int pos_x(std::size_t idx) const { return m_pos_x[idx]; }
+    int pos_y(std::size_t idx) const { return m_pos_y[idx]; }
+    std::uint8_t state_at(std::size_t idx) const { return m_state[idx]; }
+    std::size_t seed_at(std::size_t idx) const { return m_seed[idx]; }
 
-            positions.pop_back();    // vector[n-1] is popped
-            states.pop_back();
-            seeds.pop_back();
-            m_size--;
-        }
+    void set_position(std::size_t idx, const position_t& pos) {
+        m_pos_x[idx] = pos.x;
+        m_pos_y[idx] = pos.y;
+    }
 
-        void set_loaded(int index) { states[index] = loaded; }
-        void unset_loaded(int index) { states[index] = unloaded; }
-        void set_position(int index, position_t pos) { positions[index] = pos; }
+    static void set_exploration_coef(double eps) { m_eps = eps; }
 
-        bool is_loaded(int index) const { return states[index] == loaded; }
+    void advance_all(pheronome& phen, const fractal_land& land,
+                     const position_t& pos_food, const position_t& pos_nest,
+                     std::size_t& food_counter);
 
-        const position_t& get_position(int index) const { return this->positions[index]; }
+private:
+    void advance_one(std::size_t idx, pheronome& phen, const fractal_land& land,
+                     const position_t& pos_food, const position_t& pos_nest,
+                     std::size_t& local_food_counter,
+                     std::vector<pheronome::size_t>& touched_cells);
 
-        void set_exploration_coef(double eps) { this->m_eps = eps; }   // set commom exploration coefficient to the given value
-
-        size_t get_size() const { return this->m_size; }
-
-        void advance( int index, pheronome& phen, const fractal_land& land,
-                    const position_t& pos_food, const position_t& pos_nest, std::size_t& cpteur_food );
-
-        void reserve(size_t capacity) {
-            positions.reserve(capacity);
-            states.reserve(capacity);
-            seeds.reserve(capacity);
-        }
-    };
+    static double m_eps;
+    std::vector<int> m_pos_x;
+    std::vector<int> m_pos_y;
+    std::vector<std::uint8_t> m_state;
+    std::vector<std::size_t> m_seed;
+};
 
 #endif
