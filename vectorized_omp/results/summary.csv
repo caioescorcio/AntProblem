@@ -1,0 +1,15 @@
+metric,count,total_ms,mean_ms,min_ms,max_ms
+event_poll,4,0.000000,0.000000,0.000000,0.000000
+ants_advance,4,4.045280,1.011320,0.871931,1.245100
+evaporation,4,0.642058,0.160515,0.128498,0.188758
+update,4,0.021052,0.005263,0.004136,0.006645
+advance_total,4,4.708390,1.177097,1.023603,1.437994
+render,4,0.000000,0.000000,0.000000,0.000000
+blit,4,0.000000,0.000000,0.000000,0.000000
+iteration_total,4,4.708945,1.177236,1.023829,1.438088
+
+meta_key,meta_value
+total_iterations,5
+measured_iterations,4
+final_food_quantity,0
+first_food_iteration,not_reached
