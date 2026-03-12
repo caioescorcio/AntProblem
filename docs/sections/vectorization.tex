@@ -1,24 +1,25 @@
 \subsection{Vectorization application}
-The application of vectorization was carried out by replacing the old \texttt{ant.cpp} file, which contained a vector storing each \texttt{Ant} class (with its respective properties), with several separate vectors representing each of these properties[cite: 1].
-That is, the \texttt{seed}, \texttt{state}, and position (\texttt{x} and \texttt{y}) properties of each ant were transferred to four vectors within a larger class called \texttt{Population}, whose function is to manage the change in the ants' positions[cite: 2].
+The application of vectorization was carried out by replacing the old \texttt{ant.cpp} file, which contained a vector storing each \texttt{Ant} class (with its respective properties), with several separate vectors representing each of these properties.
+That is, the \texttt{seed}, \texttt{state}, and position (\texttt{x} and \texttt{y}) properties of each ant were transferred to four vectors within a larger class called \texttt{Population}, whose function is to manage the change in the ants' positions.
 
-For this adaptation, the \texttt{advance} function was modified to receive (in addition to the pheromone and terrain conditions, etc.) the index of each ant in the \texttt{Population} class vectors[cite: 3]. It maintains the previous logic but uses the name \texttt{advance\_one} for a single ant and \texttt{advance\_all} for all ants[cite: 3].
-Finally, for organizational purposes, other functions such as \texttt{add\_ant} and \texttt{reserve} were created to add ants to the population and to initialize their vectors, respectively[cite: 4].
-Regarding changes in code execution, the ant-by-ant iterations (\texttt{ant.advance}) are now performed using \texttt{Population.advance\_all} with the respective indices for every ant[cite: 5].
+For this adaptation, the \texttt{advance} function was modified to receive (in addition to the pheromone and terrain conditions, etc.) the index of each ant in the \texttt{Population} class vectors. It maintains the previous logic but uses the name \texttt{advance\_one} for a single ant and \texttt{advance\_all} for all ants.
+Finally, for organizational purposes, other functions such as \texttt{add\_ant} and \texttt{reserve} were created to add ants to the population and to initialize their vectors, respectively.
+Regarding changes in code execution, the ant-by-ant iterations (\texttt{ant.advance}) are now performed using \texttt{Population.advance\_all} with the respective indices for every ant. Table~\ref{tab:vectorization_summary} summarizes the main vectorized components.
 
 \begin{table}[htbp]
 \centering
 \caption{Summary of vectorized components in the \texttt{Population} structure.}
 \label{tab:vectorization_summary}
-\begin{tabular}{p{0.24\linewidth} p{0.68\linewidth}}
+\small
+\begin{tabular}{p{0.32\linewidth} p{0.60\linewidth}}
 \hline
 \textbf{Component} & \textbf{Brief description} \\
 \hline
-\texttt{Population} & Class storing ant properties in separate vectors. [cite: 2] \\
-\texttt{advance\_one} & Advances a single ant using its vector index. [cite: 3] \\
-\texttt{advance\_all} & Iterates over all indices to advance the population. [cite: 3, 5] \\
-\texttt{add\_ant} & Adds an ant to the population. [cite: 4] \\
-\texttt{reserve} & Initializes and allocates memory for the vectors. [cite: 4] \\
+\texttt{Population} & Class storing ant properties in separate vectors. \\
+\shortstack[l]{\texttt{Population::}\\\texttt{advance\_one}} & Advances a single ant using its vector index. \\
+\shortstack[l]{\texttt{Population::}\\\texttt{advance\_all}} & Iterates over all indices to advance the population. \\
+\shortstack[l]{\texttt{Population::}\\\texttt{add\_ant}} & Adds an ant to the population. \\
+\shortstack[l]{\texttt{Population::}\\\texttt{reserve}} & Initializes and allocates memory for the vectors. \\
 \hline
 \end{tabular}
 \end{table}

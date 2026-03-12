@@ -8,6 +8,7 @@ Concurrently, the amount of food collected by the ants is safely accumulated acr
 Once the parallel computation region concludes, the main thread sequentially iterates over all thread-local buffers to apply the marks to the global pheromone map. This strategy guarantees thread safety, avoids costly atomic locks during the movement phase, and preserves deterministic behavior in the simulation.
 
 \subsection{OpenMP results analysis}
+The dominant component in the execution time of the vectorized algorithm is the rendering process, which is not susceptible to being parallelized and therefore causes unexpected dynamics in the response of the system to the increase in the computing units. It is therefore proposed, for this section of the analysis, to analyze only the behavior of the headless execution of the algorithm, that is, without rendering, and to observe the effect that shared-memory parallelization has on the performance of the elements of the problem other than rendering.
 
 The performance of the vectorized OpenMP implementation can be analyzed through the execution-time breakdowns for different colony sizes, as illustrated in Fig.~\ref{fig:omp_calc_only_selected}.
 The charts clearly demonstrate that the ``Ant movement'' phase completely dominates the computational cost across all configurations, regardless of the colony size.
