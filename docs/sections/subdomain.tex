@@ -1,10 +1,10 @@
 \section{Distributed subdomain mpi}
 
-\newcommand{\safeincludegraphics}[2][]{%
-    \IfFileExists{#2}{\includegraphics[#1]{#2}}{%
-        \fbox{\parbox[c][0.18\textheight][c]{0.92\linewidth}{\centering Figure unavailable}}%
-    }%
-}
+% \newcommand{\safeincludegraphics}[2][]{%
+%     \IfFileExists{#2}{\includegraphics[#1]{#2}}{%
+%         \fbox{\parbox[c][0.18\textheight][c]{0.92\linewidth}{\centering Figure unavailable}}%
+%     }%
+% }
 
 In this section, the implementation of an optimization strategy over the fractal domain is proposed based on the decomposition of the terrain into two-dimensional subdomains, which are managed by each MPI process. Each one is responsible for managing one of these subdomains in the map, considering the boundary effects between two-dimensional subdomains through the concept of ghost cells. Additionally, only the logic for generating a global terrain is preserved in the root node for data collection and subsequent rendering. In the rendered MPI runs, when more than one rank is available, world rank 0 is reserved exclusively for visualization and is excluded from the Cartesian decomposition; therefore, the subdomains are assigned only to the compute ranks. In order to make that separation explicit, the implementation now keeps two communicators: a \texttt{compute\_comm} for global reductions and rank-wide control among compute processes only, and a \texttt{cart\_comm} for neighborhood exchanges tied to the Cartesian topology. The automated sweeps used for the plots now run headless by default; rendered executions are kept for exploratory runs, with the synchronous path as baseline and an optional \texttt{--async-render} flag for a decoupled render path.
 

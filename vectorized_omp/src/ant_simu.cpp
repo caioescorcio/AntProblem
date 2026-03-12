@@ -1,12 +1,13 @@
 #include <algorithm>
 #include <chrono>
-#include <filesystem>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <limits>
-#include <memory>
-#include <string>
+#include <vector>
+
+#ifdef _WIN32
+#include <direct.h>   // _mkdir
+#else
+#include <sys/stat.h> // mkdir
+#include <sys/types.h>
+#endif
 
 #include "population.hpp"
 #include "fractal_land.hpp"
@@ -51,6 +52,17 @@ struct running_stats {
 static double elapsed_ms(const std::chrono::steady_clock::time_point& start,
                          const std::chrono::steady_clock::time_point& end) {
     return std::chrono::duration<double, std::milli>(end - start).count();
+}
+
+static void ensure_parent_dir(const std::string& filepath) {
+    auto pos = filepath.find_last_of("/\\");
+    if (pos == std::string::npos || pos == 0) return;
+    std::string parent = filepath.substr(0, pos);
+#ifdef _WIN32
+    _mkdir(parent.c_str());
+#else
+    mkdir(parent.c_str(), 0755);
+#endif
 }
 
 static void print_usage(const char* progname) {
@@ -219,17 +231,7 @@ int main(int argc, char* argv[]) {
 
     std::ofstream timing_csv;
     if (!opts.timing_csv_path.empty()) {
-        const std::filesystem::path timing_path(opts.timing_csv_path);
-        const std::filesystem::path timing_parent = timing_path.parent_path();
-        if (!timing_parent.empty()) {
-            std::error_code ec;
-            std::filesystem::create_directories(timing_parent, ec);
-            if (ec) {
-                std::cerr << "Cannot create directory for timing CSV: " << timing_parent << "\n";
-                if (!opts.headless) SDL_Quit();
-                return 1;
-            }
-        }
+        ensure_parent_dir(opts.timing_csv_path);
 
         timing_csv.open(opts.timing_csv_path);
         if (!timing_csv) {
@@ -340,17 +342,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (!opts.summary_csv_path.empty()) {
-        const std::filesystem::path summary_path(opts.summary_csv_path);
-        const std::filesystem::path summary_parent = summary_path.parent_path();
-        if (!summary_parent.empty()) {
-            std::error_code ec;
-            std::filesystem::create_directories(summary_parent, ec);
-            if (ec) {
-                std::cerr << "Cannot create directory for summary CSV: " << summary_parent << "\n";
-                if (!opts.headless) SDL_Quit();
-                return 1;
-            }
-        }
+        ensure_parent_dir(opts.summary_csv_path);
 
         std::ofstream summary_csv(opts.summary_csv_path);
         if (!summary_csv) {
