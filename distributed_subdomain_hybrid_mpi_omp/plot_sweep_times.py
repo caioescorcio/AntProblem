@@ -33,7 +33,7 @@ except ImportError as exc:
 
 SUMMARY_RE = re.compile(r"summary_ranks(?P<ranks>\d+)_omp(?P<omp>\d+)_ants(?P<ants>\d+)\.csv$")
 EXPECTED_ANTS = [5000, 10000, 20000, 40000, 80000, 160000]
-EXPECTED_MPI_RANKS = list(range(2, 9))
+EXPECTED_MPI_RANKS = list(range(1, 9))
 EXPECTED_OMP_THREADS = [2, 3, 4]
 SweepData = Dict[int, Dict[int, Dict[int, Dict[str, float]]]]
 

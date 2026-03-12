@@ -43,7 +43,8 @@ Start from `vectorized/` as base, then copy structure into this folder:
 
 4. `src/renderer.cpp` and rendering usage in `src/ant_simu.cpp`
 - when rendering is enabled and more than one MPI rank is launched, reserve world rank 0 as a dedicated render rank
-- decompose the terrain only across compute ranks, and gather a lightweight visualization payload from compute rank 0 to the dedicated render rank
+- decompose the terrain only across compute ranks and keep `compute_comm` separate from the Cartesian `cart_comm`
+- keep the automated sweep headless by default, while `--async-render` remains available for the decoupled on-demand frame path when rendering is enabled manually
 
 5. `README.md` (inside this folder)
 - document domain decomposition, communication pattern, and benchmark protocol

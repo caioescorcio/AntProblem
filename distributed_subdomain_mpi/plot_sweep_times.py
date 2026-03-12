@@ -37,7 +37,7 @@ except ImportError as exc:
 
 SUMMARY_RE = re.compile(r"summary_(?:threads|ranks)(?P<procs>\d+)_ants(?P<ants>\d+)\.csv$")
 EXPECTED_ANTS = [5000, 10000, 20000, 40000, 80000, 160000]
-EXPECTED_PROCS = list(range(2, 13))
+EXPECTED_PROCS = list(range(1, 13))
 SweepData = Dict[int, Dict[int, Dict[str, float]]]
 
 

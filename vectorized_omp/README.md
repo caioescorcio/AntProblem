@@ -94,6 +94,8 @@ Headless timed run with 4 threads:
 OMP_NUM_THREADS=4 ./ant_simu.exe --headless --max-iterations 1000 --warmup-iterations 100
 ```
 
+The automated sweep script `run_render_sweep_food10.sh` also runs headless by default.
+
 ## Timing Output
 
 Per-iteration file:

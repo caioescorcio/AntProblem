@@ -9,6 +9,7 @@
 \usepackage{algorithmic}
 \usepackage{booktabs}
 \usepackage{graphicx}
+\usepackage{import}
 \usepackage{dblfloatfix}
 \usepackage{placeins}
 \usepackage{textcomp}
@@ -32,41 +33,24 @@
 
 \title{Parallel Performance Analysis of Ant Colony Optimization with OpenMP, MPI, and Hybrid Domain Decomposition}
 
-\author{\IEEEauthorblockN{1\textsuperscript{st} Given Name Surname}
-\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
-\textit{name of organization (of Aff.)}\\
-City, Country \\
-email address or ORCID}
+\author{\IEEEauthorblockN{1\textsuperscript{st} Caio Escorcia Lima Dourado}
+\IEEEauthorblockA{\textit{ENSTA Paris} \\
+\textit{Institut Polytechnique de Paris}\\
+Palaiseau, France \\
+caio.escorcio@ensta-paris.fr}
 \and
-\IEEEauthorblockN{2\textsuperscript{nd} Given Name Surname}
-\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
-\textit{name of organization (of Aff.)}\\
-City, Country \\
-email address or ORCID}
+\IEEEauthorblockN{2\textsuperscript{nd} Gustavo Loiola Dos Santos}
+\IEEEauthorblockA{\textit{ENSTA Paris} \\
+\textit{Institut Polytechnique de Paris}\\
+Palaiseau, France \\
+gustavo.loiola@ensta-paris.fr}
 \and
-\IEEEauthorblockN{3\textsuperscript{rd} Given Name Surname}
-\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
-\textit{name of organization (of Aff.)}\\
-City, Country \\
-email address or ORCID}
-\and
-\IEEEauthorblockN{4\textsuperscript{th} Given Name Surname}
-\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
-\textit{name of organization (of Aff.)}\\
-City, Country \\
-email address or ORCID}
-\and
-\IEEEauthorblockN{5\textsuperscript{th} Given Name Surname}
-\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
-\textit{name of organization (of Aff.)}\\
-City, Country \\
-email address or ORCID}
-\and
-\IEEEauthorblockN{6\textsuperscript{th} Given Name Surname}
-\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
-\textit{name of organization (of Aff.)}\\
-City, Country \\
-email address or ORCID}
+\IEEEauthorblockN{3\textsuperscript{rd} Santiago Florido Gomez}
+\IEEEauthorblockA{\textit{ENSTA Paris} \\
+\textit{Institut Polytechnique de Paris}\\
+Palaiseau, France \\
+santiago.florido@ensta-paris.fr}
+
 }
 
 \maketitle
@@ -85,8 +69,10 @@ The Ant Colony Optimization problem is one of the most widely studied metaheuris
 The importance of this optimization lies in its ability to address problems in which the search space grows rapidly and where exact methods face difficulties in terms of computational scalability. Nevertheless, in large-scale scenarios, not only because of the size of the ant colony but also due to the complexity of the map, limitations may arise in computation times and in the efficient handling of increasingly larger scales.
 
 In this context, the imminent need emerges to incorporate scalability and parallelization strategies for ACO, aimed at reducing the execution time of each algorithm by decreasing the computational load and facilitating the treatment of even larger entities. For this reason, the present document addresses parallelization with shared memory through OpenMP, as well as two different distributed-memory parallelization strategies using MPI, with the objective of improving the handling of large instances in the description of the collective behavior of ants.
-\input{sections/times.tex}
-\input{sections/subdomain.tex}
+\subimport{sections/}{times.tex}
+\subimport{sections/}{subdomain.tex}
+\subimport{sections/}{openmp.tex}
+\subimport{sections/}{vectorization.tex}
 \clearpage
 
 \begin{thebibliography}{00}

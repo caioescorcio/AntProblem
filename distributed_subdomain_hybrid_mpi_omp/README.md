@@ -16,7 +16,7 @@ Binary:
 
 ## Sweep Execution
 
-Run the provided sweep script:
+Run the provided sweep script. It executes the sweep headless by default:
 
 ```bash
 ./run_render_sweep_food10.sh

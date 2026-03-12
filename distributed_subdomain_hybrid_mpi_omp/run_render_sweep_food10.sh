@@ -12,7 +12,7 @@ RESULTS_DIR="results/sweeps_render_food10"
 mkdir -p "$RESULTS_DIR"
 
 ANTS_LIST=(5000 10000 20000 40000 80000 160000)
-MPI_RANKS_LIST=(2 3 4 5 6 7 8)
+MPI_RANKS_LIST=(1 2 3 4 5 6 7 8)
 OMP_THREADS_LIST=(2 3 4)
 
 # By default allow launching more MPI ranks than available slots/cores.
@@ -26,9 +26,10 @@ for ants in "${ANTS_LIST[@]}"; do
       iter_csv="$RESULTS_DIR/iter_ranks${mpi_ranks}_omp${omp_threads}_ants${ants}.csv"
       summary_csv="$RESULTS_DIR/summary_ranks${mpi_ranks}_omp${omp_threads}_ants${ants}.csv"
 
-      echo "Running hybrid simulation: mpi_ranks=${mpi_ranks}, omp_threads=${omp_threads}, ants=${ants}"
+      echo "Running hybrid headless sweep: mpi_ranks=${mpi_ranks}, omp_threads=${omp_threads}, ants=${ants}"
       OMP_NUM_THREADS="$omp_threads" \
       "$MPIRUN_BIN" "${MPIRUN_EXTRA_ARGS[@]}" -np "$mpi_ranks" ./build/distributed_subdomain_hybrid_mpi_omp_sim \
+        --headless \
         --nb-ants "$ants" \
         --post-first-food-iterations 10 \
         --timing-csv "$iter_csv" \

@@ -24,6 +24,7 @@
 
 struct cli_options {
     bool headless = false;
+    bool async_render = false;
     std::size_t max_iterations = 0;
     std::size_t warmup_iterations = 0;
     std::size_t nb_ants = 0;
@@ -77,13 +78,43 @@ struct GatheredRenderState {
     std::vector<RenderAntPacket> ants;
 };
 
+struct RenderGatherBuffers {
+    std::vector<double> local_dense_v1;
+    std::vector<double> local_dense_v2;
+    std::vector<double> packed_v1;
+    std::vector<double> packed_v2;
+    std::vector<int> ant_counts;
+    std::vector<int> ant_counts_bytes;
+    std::vector<int> ant_displs_bytes;
+    std::vector<RenderAntPacket> local_ant_packets;
+};
+
+struct RenderControlPacket {
+    int stop_requested = 0;
+    double event_poll_ms = 0.0;
+    double render_ms = 0.0;
+    double blit_ms = 0.0;
+};
+
+struct RenderTimingPacket {
+    double render_ms = 0.0;
+    double blit_ms = 0.0;
+};
+
+struct RenderFrameHeader {
+    int continue_flag = 1;
+    std::uint64_t food_quantity = 0;
+    std::uint64_t ant_count = 0;
+};
+
 volatile std::sig_atomic_t g_stop_requested = 0;
 
-constexpr int tag_render_frame_header = 910;
-constexpr int tag_render_frame_v1 = 911;
-constexpr int tag_render_frame_v2 = 912;
-constexpr int tag_render_frame_ants = 913;
-constexpr int tag_render_timing = 914;
+constexpr int tag_render_request = 910;
+constexpr int tag_render_frame_header = 911;
+constexpr int tag_render_frame_v1 = 912;
+constexpr int tag_render_frame_v2 = 913;
+constexpr int tag_render_frame_ants = 914;
+constexpr int tag_render_timing = 915;
 
 void on_termination_signal(int) { g_stop_requested = 1; }
 
@@ -102,6 +133,7 @@ static void print_usage(const char* progname) {
         << "Usage: " << progname << " [options]\n"
         << "Options:\n"
         << "  --headless                    Disable SDL rendering/event loop.\n"
+        << "  --async-render                Decouple render from compute when a dedicated render rank is active.\n"
         << "  --max-iterations N            Stop automatically after N iterations (0 = infinite).\n"
         << "  --warmup-iterations N         Iterations to skip in timing stats (default: 0).\n"
         << "  --nb-ants N                   Total ants globally (0 = default 1250 per MPI rank).\n"
@@ -134,6 +166,10 @@ static bool parse_cli(int argc, char* argv[], cli_options& opts) {
         }
         if (arg == "--headless") {
             opts.headless = true;
+            continue;
+        }
+        if (arg == "--async-render") {
+            opts.async_render = true;
             continue;
         }
         if (arg == "--max-iterations") {
@@ -263,7 +299,7 @@ static int offset_for_coord(int global_n, int dims_n, int coord) {
 }
 
 static void extract_local_interior(const mpi_subdomain::DomainDecomposition& decomp, const std::vector<double>& halo_field, std::vector<double>& dense_field) {
-    dense_field.assign(static_cast<std::size_t>(decomp.local_nx * decomp.local_ny), 0.0);
+    dense_field.resize(static_cast<std::size_t>(decomp.local_nx * decomp.local_ny));
 
     for (int ly = 0; ly < decomp.local_ny; ++ly) {
         for (int lx = 0; lx < decomp.local_nx; ++lx) {
@@ -274,7 +310,8 @@ static void extract_local_interior(const mpi_subdomain::DomainDecomposition& dec
 }
 
 static void unpack_rank_packed_field(const mpi_subdomain::DomainDecomposition& decomp, const std::vector<int>& displs, const std::vector<double>& packed_field, std::vector<double>& global_dense) {
-    global_dense.assign(static_cast<std::size_t>(decomp.global_nx * decomp.global_ny), 0.0);
+    global_dense.resize(static_cast<std::size_t>(decomp.global_nx * decomp.global_ny));
+    std::fill(global_dense.begin(), global_dense.end(), 0.0);
 
     for (int r = 0; r < decomp.size; ++r) {
         const std::size_t ridx = static_cast<std::size_t>(r);
@@ -300,35 +337,28 @@ static void unpack_rank_packed_field(const mpi_subdomain::DomainDecomposition& d
     }
 }
 
-static void gather_state_for_render(const mpi_subdomain::DomainDecomposition& decomp, const std::vector<int>& gather_counts, const std::vector<int>& gather_displs, const pheronome& local_phen, const Population& local_ants, GatheredRenderState* gathered_state, MPI_Comm comm) {
-    std::vector<double> local_dense_v1;
-    std::vector<double> local_dense_v2;
-    extract_local_interior(decomp, local_phen.current_channel(0), local_dense_v1);
-    extract_local_interior(decomp, local_phen.current_channel(1), local_dense_v2);
+static void gather_state_for_render(const mpi_subdomain::DomainDecomposition& decomp, const std::vector<int>& gather_counts, const std::vector<int>& gather_displs, const pheronome& local_phen, const Population& local_ants, GatheredRenderState* gathered_state, RenderGatherBuffers& buffers, MPI_Comm compute_comm) {
+    extract_local_interior(decomp, local_phen.current_channel(0), buffers.local_dense_v1);
+    extract_local_interior(decomp, local_phen.current_channel(1), buffers.local_dense_v2);
 
-    std::vector<double> packed_v1;
-    std::vector<double> packed_v2;
     if (decomp.rank == 0) {
-        packed_v1.resize(static_cast<std::size_t>(decomp.global_nx * decomp.global_ny));
-        packed_v2.resize(static_cast<std::size_t>(decomp.global_nx * decomp.global_ny));
+        const std::size_t packed_cells = static_cast<std::size_t>(decomp.global_nx * decomp.global_ny);
+        buffers.packed_v1.resize(packed_cells);
+        buffers.packed_v2.resize(packed_cells);
+        buffers.ant_counts.resize(static_cast<std::size_t>(decomp.size));
     }
 
-    MPI_Gatherv(local_dense_v1.empty() ? nullptr : local_dense_v1.data(), static_cast<int>(local_dense_v1.size()), MPI_DOUBLE, (decomp.rank == 0) ? packed_v1.data() : nullptr, (decomp.rank == 0) ? gather_counts.data() : nullptr, (decomp.rank == 0) ? gather_displs.data() : nullptr, MPI_DOUBLE, 0, comm);
+    MPI_Gatherv(buffers.local_dense_v1.empty() ? nullptr : buffers.local_dense_v1.data(), static_cast<int>(buffers.local_dense_v1.size()), MPI_DOUBLE, (decomp.rank == 0) ? buffers.packed_v1.data() : nullptr, (decomp.rank == 0) ? gather_counts.data() : nullptr, (decomp.rank == 0) ? gather_displs.data() : nullptr, MPI_DOUBLE, 0, compute_comm);
 
-    MPI_Gatherv(local_dense_v2.empty() ? nullptr : local_dense_v2.data(), static_cast<int>(local_dense_v2.size()), MPI_DOUBLE, (decomp.rank == 0) ? packed_v2.data() : nullptr, (decomp.rank == 0) ? gather_counts.data() : nullptr, (decomp.rank == 0) ? gather_displs.data() : nullptr, MPI_DOUBLE, 0, comm);
+    MPI_Gatherv(buffers.local_dense_v2.empty() ? nullptr : buffers.local_dense_v2.data(), static_cast<int>(buffers.local_dense_v2.size()), MPI_DOUBLE, (decomp.rank == 0) ? buffers.packed_v2.data() : nullptr, (decomp.rank == 0) ? gather_counts.data() : nullptr, (decomp.rank == 0) ? gather_displs.data() : nullptr, MPI_DOUBLE, 0, compute_comm);
 
     const int local_ant_count = static_cast<int>(local_ants.size());
-    std::vector<int> ant_counts;
-    if (decomp.rank == 0) {
-        ant_counts.resize(static_cast<std::size_t>(decomp.size), 0);
-    }
+    MPI_Gather(&local_ant_count, 1, MPI_INT, (decomp.rank == 0) ? buffers.ant_counts.data() : nullptr, 1, MPI_INT, 0, compute_comm);
 
-    MPI_Gather(&local_ant_count, 1, MPI_INT, (decomp.rank == 0) ? ant_counts.data() : nullptr, 1, MPI_INT, 0, comm);
-
-    std::vector<RenderAntPacket> local_ant_packets(static_cast<std::size_t>(local_ant_count));
+    buffers.local_ant_packets.resize(static_cast<std::size_t>(local_ant_count));
     for (int i = 0; i < local_ant_count; ++i) {
         const std::size_t idx = static_cast<std::size_t>(i);
-        local_ant_packets[idx] = RenderAntPacket{
+        buffers.local_ant_packets[idx] = RenderAntPacket{
             local_ants.pos_x(idx),
             local_ants.pos_y(idx),
             local_ants.state_at(idx),
@@ -336,36 +366,34 @@ static void gather_state_for_render(const mpi_subdomain::DomainDecomposition& de
         };
     }
 
-    std::vector<int> ant_counts_bytes;
-    std::vector<int> ant_displs_bytes;
-    std::vector<RenderAntPacket> gathered_ants;
     std::size_t total_ants = 0;
 
     if (decomp.rank == 0) {
-        ant_counts_bytes.resize(static_cast<std::size_t>(decomp.size), 0);
-        ant_displs_bytes.resize(static_cast<std::size_t>(decomp.size), 0);
+        buffers.ant_counts_bytes.resize(static_cast<std::size_t>(decomp.size), 0);
+        buffers.ant_displs_bytes.resize(static_cast<std::size_t>(decomp.size), 0);
 
         int byte_displ = 0;
         for (int r = 0; r < decomp.size; ++r) {
             const std::size_t ridx = static_cast<std::size_t>(r);
-            ant_counts_bytes[ridx] = ant_counts[ridx] * static_cast<int>(sizeof(RenderAntPacket));
-            ant_displs_bytes[ridx] = byte_displ;
-            byte_displ += ant_counts_bytes[ridx];
-            total_ants += static_cast<std::size_t>(ant_counts[ridx]);
+            buffers.ant_counts_bytes[ridx] = buffers.ant_counts[ridx] * static_cast<int>(sizeof(RenderAntPacket));
+            buffers.ant_displs_bytes[ridx] = byte_displ;
+            byte_displ += buffers.ant_counts_bytes[ridx];
+            total_ants += static_cast<std::size_t>(buffers.ant_counts[ridx]);
         }
 
-        gathered_ants.resize(total_ants);
+        if (gathered_state != nullptr) {
+            gathered_state->ants.resize(total_ants);
+        }
     }
 
-    MPI_Gatherv(local_ant_packets.empty() ? nullptr : local_ant_packets.data(), local_ant_count * static_cast<int>(sizeof(RenderAntPacket)), MPI_BYTE, (decomp.rank == 0) ? gathered_ants.data() : nullptr, (decomp.rank == 0) ? ant_counts_bytes.data() : nullptr, (decomp.rank == 0) ? ant_displs_bytes.data() : nullptr, MPI_BYTE, 0, comm);
+    MPI_Gatherv(buffers.local_ant_packets.empty() ? nullptr : buffers.local_ant_packets.data(), local_ant_count * static_cast<int>(sizeof(RenderAntPacket)), MPI_BYTE, (decomp.rank == 0 && gathered_state != nullptr) ? gathered_state->ants.data() : nullptr, (decomp.rank == 0) ? buffers.ant_counts_bytes.data() : nullptr, (decomp.rank == 0) ? buffers.ant_displs_bytes.data() : nullptr, MPI_BYTE, 0, compute_comm);
 
     if (decomp.rank != 0 || gathered_state == nullptr) {
         return;
     }
 
-    unpack_rank_packed_field(decomp, gather_displs, packed_v1, gathered_state->dense_v1);
-    unpack_rank_packed_field(decomp, gather_displs, packed_v2, gathered_state->dense_v2);
-    gathered_state->ants = std::move(gathered_ants);
+    unpack_rank_packed_field(decomp, gather_displs, buffers.packed_v1, gathered_state->dense_v1);
+    unpack_rank_packed_field(decomp, gather_displs, buffers.packed_v2, gathered_state->dense_v2);
 }
 
 static void load_render_state(const GatheredRenderState& gathered_state, pheronome& render_phen, Population& render_ants) {
@@ -377,9 +405,29 @@ static void load_render_state(const GatheredRenderState& gathered_state, pherono
     }
 }
 
-static void send_render_state_to_rank(const GatheredRenderState& gathered_state, std::uint64_t food_quantity, int dest_rank, MPI_Comm world_comm) {
-    std::uint64_t header[2] = {food_quantity, static_cast<std::uint64_t>(gathered_state.ants.size())};
-    MPI_Send(header, 2, MPI_UNSIGNED_LONG_LONG, dest_rank, tag_render_frame_header, world_comm);
+static bool try_receive_render_control_from_rank(int src_rank, RenderControlPacket& control, MPI_Comm world_comm) {
+    int flag = 0;
+    MPI_Iprobe(src_rank, tag_render_request, world_comm, &flag, MPI_STATUS_IGNORE);
+    if (flag == 0) {
+        return false;
+    }
+
+    MPI_Recv(&control, static_cast<int>(sizeof(control)), MPI_BYTE, src_rank, tag_render_request, world_comm,
+             MPI_STATUS_IGNORE);
+    return true;
+}
+
+static void wait_for_render_control_from_rank(int src_rank, RenderControlPacket& control, MPI_Comm world_comm) {
+    MPI_Recv(&control, static_cast<int>(sizeof(control)), MPI_BYTE, src_rank, tag_render_request, world_comm,
+             MPI_STATUS_IGNORE);
+}
+
+static void send_render_state_to_rank(const GatheredRenderState& gathered_state, std::uint64_t food_quantity, int dest_rank, bool continue_flag, MPI_Comm world_comm) {
+    const RenderFrameHeader header{continue_flag ? 1 : 0, food_quantity, static_cast<std::uint64_t>(gathered_state.ants.size())};
+    MPI_Send(&header, static_cast<int>(sizeof(header)), MPI_BYTE, dest_rank, tag_render_frame_header, world_comm);
+    if (!continue_flag) {
+        return;
+    }
     MPI_Send(gathered_state.dense_v1.data(), static_cast<int>(gathered_state.dense_v1.size()), MPI_DOUBLE, dest_rank, tag_render_frame_v1, world_comm);
     MPI_Send(gathered_state.dense_v2.data(), static_cast<int>(gathered_state.dense_v2.size()), MPI_DOUBLE, dest_rank, tag_render_frame_v2, world_comm);
     if (!gathered_state.ants.empty()) {
@@ -387,11 +435,16 @@ static void send_render_state_to_rank(const GatheredRenderState& gathered_state,
     }
 }
 
-static void receive_render_state_from_rank(int src_rank, int global_dim, GatheredRenderState& gathered_state, std::uint64_t& food_quantity, MPI_Comm world_comm) {
-    std::uint64_t header[2] = {0, 0};
-    MPI_Recv(header, 2, MPI_UNSIGNED_LONG_LONG, src_rank, tag_render_frame_header, world_comm, MPI_STATUS_IGNORE);
-    food_quantity = header[0];
-    const std::size_t ant_count = static_cast<std::size_t>(header[1]);
+static bool receive_render_state_from_rank(int src_rank, int global_dim, GatheredRenderState& gathered_state, std::uint64_t& food_quantity, MPI_Comm world_comm) {
+    RenderFrameHeader header{};
+    MPI_Recv(&header, static_cast<int>(sizeof(header)), MPI_BYTE, src_rank, tag_render_frame_header, world_comm,
+             MPI_STATUS_IGNORE);
+    food_quantity = header.food_quantity;
+    if (header.continue_flag == 0) {
+        return false;
+    }
+
+    const std::size_t ant_count = static_cast<std::size_t>(header.ant_count);
     const std::size_t dense_size = static_cast<std::size_t>(global_dim) * static_cast<std::size_t>(global_dim);
     gathered_state.dense_v1.resize(dense_size);
     gathered_state.dense_v2.resize(dense_size);
@@ -401,6 +454,7 @@ static void receive_render_state_from_rank(int src_rank, int global_dim, Gathere
     if (ant_count > 0) {
         MPI_Recv(gathered_state.ants.data(), static_cast<int>(gathered_state.ants.size() * sizeof(RenderAntPacket)), MPI_BYTE, src_rank, tag_render_frame_ants, world_comm, MPI_STATUS_IGNORE);
     }
+    return true;
 }
 
 int main(int argc, char* argv[]) {
@@ -435,6 +489,7 @@ int main(int argc, char* argv[]) {
     const position_t pos_food{500, 500};
 
     const bool dedicated_render_rank = !opts.headless && world_size > 1;
+    const bool async_render = dedicated_render_rank && opts.async_render;
     const bool is_render_only_rank = dedicated_render_rank && world_rank == 0;
     const bool is_compute_rank = !dedicated_render_rank || world_rank != 0;
     const int compute_root_world_rank = dedicated_render_rank ? 1 : 0;
@@ -460,10 +515,10 @@ int main(int argc, char* argv[]) {
         global_dim = static_cast<int>(global_land->dimensions());
     }
 
-    MPI_Comm comm = MPI_COMM_NULL;
-    MPI_Comm_split(world_comm, is_compute_rank ? 0 : MPI_UNDEFINED, world_rank, &comm);
+    MPI_Comm compute_comm = MPI_COMM_NULL;
+    MPI_Comm_split(world_comm, is_compute_rank ? 0 : MPI_UNDEFINED, world_rank, &compute_comm);
     if (is_compute_rank) {
-        MPI_Bcast(&global_dim, 1, MPI_INT, 0, comm);
+        MPI_Bcast(&global_dim, 1, MPI_INT, 0, compute_comm);
     }
 
     if (is_render_only_rank) {
@@ -478,47 +533,95 @@ int main(int argc, char* argv[]) {
         render_ants.reserve(total_nb_ants);
         Renderer renderer(*global_land, render_phen, pos_nest, pos_food, render_ants);
         GatheredRenderState gathered_state;
+        if (async_render) {
+            double last_render_ms = 0.0;
+            double last_blit_ms = 0.0;
 
-        while (true) {
-            int local_stop = (g_stop_requested != 0) ? 1 : 0;
-            double event_poll_ms = 0.0;
+            while (true) {
+                int local_stop = (g_stop_requested != 0) ? 1 : 0;
+                double event_poll_ms = 0.0;
 
-            SDL_Event event;
-            const auto events_begin = std::chrono::steady_clock::now();
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) {
-                    local_stop = 1;
+                SDL_Event event;
+                const auto events_begin = std::chrono::steady_clock::now();
+                while (SDL_PollEvent(&event)) {
+                    if (event.type == SDL_QUIT) {
+                        local_stop = 1;
+                    }
                 }
+                const auto events_end = std::chrono::steady_clock::now();
+                event_poll_ms = elapsed_ms(events_begin, events_end);
+
+                RenderControlPacket control_packet;
+                control_packet.stop_requested = local_stop;
+                control_packet.event_poll_ms = event_poll_ms;
+                control_packet.render_ms = last_render_ms;
+                control_packet.blit_ms = last_blit_ms;
+
+                MPI_Request control_request = MPI_REQUEST_NULL;
+                MPI_Isend(&control_packet, static_cast<int>(sizeof(control_packet)), MPI_BYTE, compute_root_world_rank,
+                          tag_render_request, world_comm, &control_request);
+
+                std::uint64_t food_quantity = 0;
+                const bool continue_flag = receive_render_state_from_rank(
+                    compute_root_world_rank, global_dim, gathered_state, food_quantity, world_comm);
+                MPI_Wait(&control_request, MPI_STATUS_IGNORE);
+                if (!continue_flag) {
+                    break;
+                }
+
+                load_render_state(gathered_state, render_phen, render_ants);
+
+                const auto render_begin = std::chrono::steady_clock::now();
+                renderer.display(win, static_cast<std::size_t>(food_quantity));
+                const auto render_end = std::chrono::steady_clock::now();
+                win.blit();
+                const auto blit_end = std::chrono::steady_clock::now();
+                last_render_ms = elapsed_ms(render_begin, render_end);
+                last_blit_ms = elapsed_ms(render_end, blit_end);
             }
-            const auto events_end = std::chrono::steady_clock::now();
-            event_poll_ms = elapsed_ms(events_begin, events_end);
+        } else {
+            while (true) {
+                int local_stop = (g_stop_requested != 0) ? 1 : 0;
+                double event_poll_ms = 0.0;
 
-            int global_stop = 0;
-            MPI_Allreduce(&local_stop, &global_stop, 1, MPI_INT, MPI_MAX, world_comm);
-            (void)global_stop;
+                SDL_Event event;
+                const auto events_begin = std::chrono::steady_clock::now();
+                while (SDL_PollEvent(&event)) {
+                    if (event.type == SDL_QUIT) {
+                        local_stop = 1;
+                    }
+                }
+                const auto events_end = std::chrono::steady_clock::now();
+                event_poll_ms = elapsed_ms(events_begin, events_end);
 
-            int continue_flag = 1;
-            MPI_Bcast(&continue_flag, 1, MPI_INT, compute_root_world_rank, world_comm);
-            if (continue_flag == 0) {
-                break;
+                RenderControlPacket control_packet;
+                control_packet.stop_requested = local_stop;
+                control_packet.event_poll_ms = event_poll_ms;
+                MPI_Send(&control_packet, static_cast<int>(sizeof(control_packet)), MPI_BYTE, compute_root_world_rank,
+                         tag_render_request, world_comm);
+
+                std::uint64_t food_quantity = 0;
+                const bool continue_flag = receive_render_state_from_rank(
+                    compute_root_world_rank, global_dim, gathered_state, food_quantity, world_comm);
+                if (!continue_flag) {
+                    break;
+                }
+
+                load_render_state(gathered_state, render_phen, render_ants);
+
+                const auto render_begin = std::chrono::steady_clock::now();
+                renderer.display(win, static_cast<std::size_t>(food_quantity));
+                const auto render_end = std::chrono::steady_clock::now();
+                win.blit();
+                const auto blit_end = std::chrono::steady_clock::now();
+
+                const RenderTimingPacket timing_packet{
+                    elapsed_ms(render_begin, render_end),
+                    elapsed_ms(render_end, blit_end),
+                };
+                MPI_Send(&timing_packet, static_cast<int>(sizeof(timing_packet)), MPI_BYTE, compute_root_world_rank,
+                         tag_render_timing, world_comm);
             }
-
-            std::uint64_t food_quantity = 0;
-            receive_render_state_from_rank(compute_root_world_rank, global_dim, gathered_state, food_quantity, world_comm);
-            load_render_state(gathered_state, render_phen, render_ants);
-
-            const auto render_begin = std::chrono::steady_clock::now();
-            renderer.display(win, static_cast<std::size_t>(food_quantity));
-            const auto render_end = std::chrono::steady_clock::now();
-            win.blit();
-            const auto blit_end = std::chrono::steady_clock::now();
-
-            double timing_packet[3] = {
-                event_poll_ms,
-                elapsed_ms(render_begin, render_end),
-                elapsed_ms(render_end, blit_end),
-            };
-            MPI_Send(timing_packet, 3, MPI_DOUBLE, compute_root_world_rank, tag_render_timing, world_comm);
         }
 
         SDL_Quit();
@@ -526,7 +629,8 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    const auto decomp = mpi_subdomain::map_decomposed(global_dim, global_dim, comm, comm);
+    MPI_Comm cart_comm = MPI_COMM_NULL;
+    const auto decomp = mpi_subdomain::map_decomposed(global_dim, global_dim, compute_comm, cart_comm);
     const int rank = decomp.rank;
 
     const std::vector<int> gather_counts = decomp.gather_counts_cells();
@@ -538,7 +642,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::vector<double> local_land_dense(static_cast<std::size_t>(decomp.local_nx * decomp.local_ny), 1.0);
-    MPI_Scatterv((rank == 0) ? packed_land.data() : nullptr, gather_counts.data(), gather_displs.data(), MPI_DOUBLE, local_land_dense.empty() ? nullptr : local_land_dense.data(), static_cast<int>(local_land_dense.size()), MPI_DOUBLE, 0, comm);
+    MPI_Scatterv((rank == 0) ? packed_land.data() : nullptr, gather_counts.data(), gather_displs.data(), MPI_DOUBLE, local_land_dense.empty() ? nullptr : local_land_dense.data(), static_cast<int>(local_land_dense.size()), MPI_DOUBLE, 0, compute_comm);
 
     std::vector<double> terrain(decomp.halo_size(), 1.0);
     std::vector<int> cell_type(decomp.halo_size(), 0);
@@ -561,16 +665,16 @@ int main(int argc, char* argv[]) {
         cell_type[decomp.idx(lx, ly)] = 2;
     }
 
-    mpi_subdomain::exchange_static_halos(decomp, terrain, cell_type, comm);
+    mpi_subdomain::exchange_static_halos(decomp, terrain, cell_type, cart_comm);
 
     pheronome local_phen(decomp, pos_food, pos_nest, alpha, beta);
     mpi_subdomain::PheromoneHaloExchange halo_exchange_state;
-    mpi_subdomain::exchange_pheromone_halos(decomp, local_phen.current_channel(0), local_phen.current_channel(1), comm);
+    mpi_subdomain::exchange_pheromone_halos(decomp, local_phen.current_channel(0), local_phen.current_channel(1), cart_comm);
 
     Population::set_exploration_coef(eps);
 
     Population ants;
-    mpi_subdomain::distribute_initial_ants(decomp, nb_ants, ants_seed, ants, comm);
+    mpi_subdomain::distribute_initial_ants(decomp, nb_ants, ants_seed, ants, compute_comm);
 
     std::unique_ptr<Window> win;
     std::unique_ptr<pheronome> render_phen;
@@ -599,7 +703,7 @@ int main(int argc, char* argv[]) {
             std::filesystem::create_directories(timing_parent, ec);
             if (ec) {
                 std::cerr << "Cannot create directory for timing CSV: " << timing_parent << "\n";
-                if (!opts.headless) SDL_Quit();
+                if (!opts.headless && !dedicated_render_rank) SDL_Quit();
                 MPI_Finalize();
                 return 1;
             }
@@ -608,7 +712,7 @@ int main(int argc, char* argv[]) {
         timing_csv.open(opts.timing_csv_path);
         if (!timing_csv) {
             std::cerr << "Cannot open timing CSV: " << opts.timing_csv_path << "\n";
-            if (!opts.headless) SDL_Quit();
+            if (!opts.headless && !dedicated_render_rank) SDL_Quit();
             MPI_Finalize();
             return 1;
         }
@@ -647,6 +751,9 @@ int main(int argc, char* argv[]) {
     std::vector<std::uint64_t> rank0_food_batch;
     std::vector<std::size_t> rank0_iteration_batch;
     GatheredRenderState gathered_render_state;
+    RenderGatherBuffers render_gather_buffers;
+    RenderControlPacket pending_render_control;
+    bool render_request_pending = false;
     if (rank == 0) {
         rank0_event_poll_batch.reserve(metrics_reduce_batch_size);
         rank0_render_batch.reserve(metrics_reduce_batch_size);
@@ -665,7 +772,7 @@ int main(int argc, char* argv[]) {
         }
 
         MPI_Reduce(local_metric_batch.data(), (rank == 0) ? global_metric_batch.data() : nullptr,
-                   static_cast<int>(batch_count * metric_count), MPI_DOUBLE, MPI_MAX, 0, comm);
+                   static_cast<int>(batch_count * metric_count), MPI_DOUBLE, MPI_MAX, 0, compute_comm);
 
         if (rank == 0) {
             for (std::size_t i = 0; i < batch_count; ++i) {
@@ -711,10 +818,23 @@ int main(int argc, char* argv[]) {
     };
 
     while (true) {
+        if (rank == 0 && async_render && !render_request_pending) {
+            render_request_pending = try_receive_render_control_from_rank(0, pending_render_control, world_comm);
+        }
+
+        if (rank == 0 && dedicated_render_rank && !async_render) {
+            wait_for_render_control_from_rank(0, pending_render_control, world_comm);
+        }
+
         int local_stop = (g_stop_requested != 0) ? 1 : 0;
         int global_stop = 0;
-        MPI_Allreduce(&local_stop, &global_stop, 1, MPI_INT, MPI_MAX, world_comm);
+        MPI_Allreduce(&local_stop, &global_stop, 1, MPI_INT, MPI_MAX, compute_comm);
         if (global_stop != 0) {
+            keep_running = false;
+        }
+        if (rank == 0 && dedicated_render_rank &&
+            ((async_render && render_request_pending) || !async_render) &&
+            pending_render_control.stop_requested != 0) {
             keep_running = false;
         }
 
@@ -727,8 +847,20 @@ int main(int argc, char* argv[]) {
         }
 
         int continue_flag = keep_running ? 1 : 0;
-        MPI_Bcast(&continue_flag, 1, MPI_INT, compute_root_world_rank, world_comm);
+        MPI_Bcast(&continue_flag, 1, MPI_INT, 0, compute_comm);
         if (continue_flag == 0) {
+            if (rank == 0 && dedicated_render_rank) {
+                if (async_render) {
+                    if (!render_request_pending) {
+                        wait_for_render_control_from_rank(0, pending_render_control, world_comm);
+                        render_request_pending = true;
+                    }
+                    send_render_state_to_rank(gathered_render_state, food_quantity, 0, false, world_comm);
+                    render_request_pending = false;
+                } else {
+                    send_render_state_to_rank(gathered_render_state, food_quantity, 0, false, world_comm);
+                }
+            }
             break;
         }
 
@@ -736,7 +868,9 @@ int main(int argc, char* argv[]) {
         const auto iter_begin = std::chrono::steady_clock::now();
 
         double event_poll_ms = 0.0;
-        if (rank == 0 && !opts.headless && !dedicated_render_rank) {
+        if (rank == 0 && dedicated_render_rank && !async_render) {
+            event_poll_ms = pending_render_control.event_poll_ms;
+        } else if (rank == 0 && !opts.headless && !dedicated_render_rank) {
             SDL_Event event;
             const auto events_begin = std::chrono::steady_clock::now();
             while (SDL_PollEvent(&event)) {
@@ -751,21 +885,21 @@ int main(int argc, char* argv[]) {
         double halo_ms_local = 0.0;
         {
             const double t0 = MPI_Wtime();
-            mpi_subdomain::begin_pheromone_halo_exchange(decomp, local_phen.current_channel(0), local_phen.current_channel(1), halo_exchange_state, comm);
+            mpi_subdomain::begin_pheromone_halo_exchange(decomp, local_phen.current_channel(0), local_phen.current_channel(1), halo_exchange_state, cart_comm);
             mpi_subdomain::end_pheromone_halo_exchange(decomp, local_phen.current_channel(0), local_phen.current_channel(1), halo_exchange_state);
             halo_ms_local = (MPI_Wtime() - t0) * 1000.0;
         }
 
         mpi_subdomain::StepContext step_ctx{terrain, local_phen.current_channel(0), local_phen.current_channel(1), local_phen.buffer_channel(0), local_phen.buffer_channel(1), pos_food, pos_nest, alpha, eps};
 
-        const auto step_result = mpi_subdomain::advance_ants_with_migration(decomp, step_ctx, ants, comm);
+        const auto step_result = mpi_subdomain::advance_ants_with_migration(decomp, step_ctx, ants, cart_comm);
         const double ants_ms_local = step_result.move_local_time * 1000.0;
         const double migration_ms_local = step_result.migration_time * 1000.0;
         const std::uint64_t local_food_delta = static_cast<std::uint64_t>(step_result.food_collected_local);
         std::uint64_t global_food_delta = 0;
         double food_allreduce_ms_local = 0.0;
         MPI_Request food_allreduce_req = MPI_REQUEST_NULL;
-        MPI_Iallreduce(&local_food_delta, &global_food_delta, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, comm,
+        MPI_Iallreduce(&local_food_delta, &global_food_delta, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, compute_comm,
                        &food_allreduce_req);
 
         double evaporation_ms_local = 0.0;
@@ -802,10 +936,32 @@ int main(int argc, char* argv[]) {
 
         const double advance_total_local = ants_ms_local + evaporation_ms_local + update_ms_local;
 
+        if (rank == 0 && async_render && !render_request_pending) {
+            render_request_pending = try_receive_render_control_from_rank(0, pending_render_control, world_comm);
+        }
+
         double render_comm_ms_local = 0.0;
-        if (!opts.headless) {
+        int render_frame_requested = 0;
+        if (!opts.headless && async_render) {
+            if (rank == 0 && render_request_pending) {
+                render_frame_requested = 1;
+            }
+            MPI_Bcast(&render_frame_requested, 1, MPI_INT, 0, compute_comm);
+        }
+        const bool gather_for_render =
+            !opts.headless && (!dedicated_render_rank || !async_render || render_frame_requested != 0);
+        if (gather_for_render) {
             const double t0 = MPI_Wtime();
-            gather_state_for_render(decomp, gather_counts, gather_displs, local_phen, ants, (rank == 0) ? &gathered_render_state : nullptr, comm);
+            gather_state_for_render(
+                decomp,
+                gather_counts,
+                gather_displs,
+                local_phen,
+                ants,
+                (rank == 0) ? &gathered_render_state : nullptr,
+                render_gather_buffers,
+                compute_comm
+            );
             render_comm_ms_local = (MPI_Wtime() - t0) * 1000.0;
         }
 
@@ -821,13 +977,24 @@ int main(int argc, char* argv[]) {
         if (!opts.headless && dedicated_render_rank) {
             if (rank == 0) {
                 const double t0 = MPI_Wtime();
-                send_render_state_to_rank(gathered_render_state, food_quantity, 0, world_comm);
-                double timing_packet[3] = {0.0, 0.0, 0.0};
-                MPI_Recv(timing_packet, 3, MPI_DOUBLE, 0, tag_render_timing, world_comm, MPI_STATUS_IGNORE);
-                render_comm_ms_local += (MPI_Wtime() - t0) * 1000.0;
-                event_poll_ms = timing_packet[0];
-                render_ms = timing_packet[1];
-                blit_ms = timing_packet[2];
+                if (async_render) {
+                    if (render_request_pending) {
+                        send_render_state_to_rank(gathered_render_state, food_quantity, 0, true, world_comm);
+                        render_comm_ms_local += (MPI_Wtime() - t0) * 1000.0;
+                        event_poll_ms = pending_render_control.event_poll_ms;
+                        render_ms = pending_render_control.render_ms;
+                        blit_ms = pending_render_control.blit_ms;
+                        render_request_pending = false;
+                    }
+                } else {
+                    send_render_state_to_rank(gathered_render_state, food_quantity, 0, true, world_comm);
+                    RenderTimingPacket timing_packet;
+                    MPI_Recv(&timing_packet, static_cast<int>(sizeof(timing_packet)), MPI_BYTE, 0, tag_render_timing,
+                             world_comm, MPI_STATUS_IGNORE);
+                    render_comm_ms_local += (MPI_Wtime() - t0) * 1000.0;
+                    render_ms = timing_packet.render_ms;
+                    blit_ms = timing_packet.blit_ms;
+                }
             }
         } else if (rank == 0 && !opts.headless) {
             load_render_state(gathered_render_state, *render_phen, *render_ants);
@@ -913,11 +1080,14 @@ int main(int argc, char* argv[]) {
         write_summary_csv_file(opts.summary_csv_path, event_stats, ants_stats, evaporation_stats, update_stats, advance_total_stats, render_stats, blit_stats, iteration_total_stats, mpi_halo_stats, mpi_migration_stats, mpi_food_allreduce_stats, mpi_render_comm_stats, mpi_total_comm_stats, it, measured_iterations, food_quantity, first_food_iteration);
     }
 
-    if (rank == 0 && !opts.headless) {
+    if (rank == 0 && !opts.headless && !dedicated_render_rank) {
         SDL_Quit();
     }
-    if (comm != MPI_COMM_NULL) {
-        MPI_Comm_free(&comm);
+    if (cart_comm != MPI_COMM_NULL) {
+        MPI_Comm_free(&cart_comm);
+    }
+    if (compute_comm != MPI_COMM_NULL) {
+        MPI_Comm_free(&compute_comm);
     }
 
     MPI_Finalize();
