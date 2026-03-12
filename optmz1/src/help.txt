@@ -1,0 +1,11 @@
+Usage: C:\ENSTA\P3\parallele\AntProblem\optmz1\src\ant_simu.exe [options]
+Options:
+  --headless                    Disable SDL rendering/event loop.
+  --max-iterations N            Stop automatically after N iterations (0 = infinite).
+  --warmup-iterations N         Iterations to skip in timing stats (default: 0).
+  --nb-ants N                   Total number of ants (default: 5000).
+  --post-first-food-iterations N
+                                Stop after N iterations once first food reaches the nest (0 = disabled).
+  --timing-csv PATH             Write per-iteration timings to PATH (default: results/iter.csv).
+  --summary-csv PATH            Write aggregated timing stats to PATH (default: results/summary.csv).
+  --help                        Show this help message.
