@@ -19,16 +19,6 @@ docs/*.out
 docs/*.synctex.gz
 docs/*.toc
 
-# Generated figures and tables
-distributed_subdomain_mpi/results/**/plots/*.png
-distributed_subdomain_mpi/results/**/plots/*.tex
-distributed_subdomain_hybrid_mpi_omp/results/**/plots/*.png
-distributed_subdomain_hybrid_mpi_omp/results/**/plots/*.tex
-docs/figures/compare_subdomain_omp/*.png
-docs/figures/compare_subdomain_omp/*.tex
-docs/figures/compare_omp_mpi_hybrid/*.png
-docs/figures/compare_omp_mpi_hybrid/*.tex
-
 # Build directories (any project folder)
 **/build/
 **/cmake-build*/

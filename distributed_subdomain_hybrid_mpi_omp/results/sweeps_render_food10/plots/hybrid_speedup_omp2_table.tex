@@ -1,0 +1,24 @@
+% Auto-generated. Do not edit by hand.
+\begin{table}[!htbp]
+\centering
+\caption{Hybrid MPI+OpenMP compute speedup for OMP=2 threads per rank.}
+\label{tab:hybrid_speedup_omp2}
+\normalsize
+\setlength{\tabcolsep}{2.4pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Proc/Ants} & \textbf{5k} & \textbf{10k} & \textbf{20k} & \textbf{40k} & \textbf{80k} & \textbf{160k} \\
+\midrule
+1 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+2 & 1.63 & 1.44 & 1.47 & 1.68 & 1.74 & 1.41 \\
+3 & 1.61 & 1.50 & 1.71 & 1.99 & 1.60 & 1.50 \\
+4 & 1.66 & 1.50 & 1.76 & 2.07 & 1.79 & 1.49 \\
+5 & 1.66 & 1.55 & 1.93 & 2.26 & 1.78 & 1.63 \\
+6 & 1.64 & 1.69 & 1.74 & 2.41 & 2.02 & 1.82 \\
+7 & 1.81 & 1.89 & 1.89 & 2.61 & 2.47 & 2.14 \\
+8 & 1.62 & 1.91 & 2.06 & 2.69 & 2.03 & 2.40 \\
+\bottomrule
+\end{tabular}
+\par\vspace{2pt}\parbox{\columnwidth}{\raggedright\footnotesize\textit{Note.} The compute metric is $advance\_total + mpi\_halo\_exchange + mpi\_migration + mpi\_food\_allreduce$, matching the hybrid sweep plots. Efficiency is computed with respect to the number of compute MPI processes only; rendering is excluded from the process count. For each combination of colony size and OpenMP threads per rank, the baseline is the smallest available MPI process count $p_0$. Each cell reports speedup $S=T(p_0)/T(p)$.}
+\end{table}

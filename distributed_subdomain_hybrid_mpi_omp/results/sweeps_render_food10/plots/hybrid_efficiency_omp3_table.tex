@@ -1,0 +1,24 @@
+% Auto-generated. Do not edit by hand.
+\begin{table}[!htbp]
+\centering
+\caption{Hybrid MPI+OpenMP compute efficiency for OMP=3 threads per rank.}
+\label{tab:hybrid_efficiency_omp3}
+\normalsize
+\setlength{\tabcolsep}{2.4pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Proc/Ants} & \textbf{5k} & \textbf{10k} & \textbf{20k} & \textbf{40k} & \textbf{80k} & \textbf{160k} \\
+\midrule
+1 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+2 & 0.69 & 0.64 & 0.85 & 0.86 & 0.84 & 0.93 \\
+3 & 0.60 & 0.61 & 0.67 & 0.59 & 0.65 & 0.58 \\
+4 & 0.42 & 0.40 & 0.51 & 0.51 & 0.55 & 0.56 \\
+5 & 0.38 & 0.35 & 0.50 & 0.44 & 0.46 & 0.50 \\
+6 & 0.01 & 0.02 & 0.04 & 0.06 & 0.13 & 0.20 \\
+7 & 0.01 & 0.01 & 0.02 & 0.03 & 0.06 & 0.12 \\
+8 & 0.00 & 0.01 & 0.01 & 0.02 & 0.04 & 0.09 \\
+\bottomrule
+\end{tabular}
+\par\vspace{2pt}\parbox{\columnwidth}{\raggedright\footnotesize\textit{Note.} The compute metric is $advance\_total + mpi\_halo\_exchange + mpi\_migration + mpi\_food\_allreduce$, matching the hybrid sweep plots. Efficiency is computed with respect to the number of compute MPI processes only; rendering is excluded from the process count. For each combination of colony size and OpenMP threads per rank, the baseline is the smallest available MPI process count $p_0$. Each cell reports efficiency $E=S/(p/p_0)$.}
+\end{table}
