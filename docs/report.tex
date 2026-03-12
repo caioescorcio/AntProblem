@@ -34,6 +34,13 @@
 }
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\providecommand{\safeincludegraphics}[2][]{%
+    \IfFileExists{#2}{\includegraphics[#1]{#2}}{%
+        \fbox{\parbox[c][0.18\textheight][c]{0.92\linewidth}{\centering Figure unavailable}}%
+    }%
+}
+
 \begin{document}
 
 \title{Parallel Performance Analysis of Ant Colony Optimization with OpenMP, MPI, and Hybrid Domain Decomposition}
@@ -77,6 +84,7 @@ In this context, the imminent need emerges to incorporate scalability and parall
 \subimport{sections/}{times.tex}
 \subimport{sections/}{vectorization.tex}
 \subimport{sections/}{openmp.tex}
+\subimport{sections/}{mpi_population.tex}
 \subimport{sections/}{subdomain.tex}
 
 \clearpage
