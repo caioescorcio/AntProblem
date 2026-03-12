@@ -37,7 +37,7 @@ SUMMARY_MPI_RE = re.compile(r"summary_(?:threads|ranks)(?P<ranks>\d+)_ants(?P<an
 SUMMARY_HYBRID_RE = re.compile(r"summary_ranks(?P<ranks>\d+)_omp(?P<omp>\d+)_ants(?P<ants>\d+)\.csv$")
 
 EXPECTED_ANTS = [5000, 10000, 20000, 40000, 80000, 160000]
-EXPECTED_PAR_UNITS = list(range(2, 9))
+EXPECTED_PAR_UNITS = list(range(1, 9))
 EXPECTED_HYBRID_OMP = [2, 3, 4]
 REPORT_SELECTED_ANTS = [5000, 40000, 160000]
 

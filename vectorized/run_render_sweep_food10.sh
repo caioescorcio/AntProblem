@@ -16,8 +16,9 @@ for ants in "${ANTS_LIST[@]}"; do
   iter_csv="$RESULTS_DIR/iter_threads1_ants${ants}.csv"
   summary_csv="$RESULTS_DIR/summary_threads1_ants${ants}.csv"
 
-  echo "Running vectorized simulation: threads=1, ants=${ants}"
+  echo "Running vectorized headless sweep: threads=1, ants=${ants}"
   ./ant_simu.exe \
+    --headless \
     --nb-ants "$ants" \
     --post-first-food-iterations "$POST_FIRST_FOOD_ITERATIONS" \
     --timing-csv "$iter_csv" \

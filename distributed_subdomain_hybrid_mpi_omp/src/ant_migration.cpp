@@ -586,6 +586,14 @@ StepResult advance_ants_with_migration(const DomainDecomposition& decomp, const 
     }
     result.move_local_time += MPI_Wtime() - t_move_begin;
 
+    const bool has_migration_neighbors =
+        decomp.up_rank != MPI_PROC_NULL || decomp.down_rank != MPI_PROC_NULL ||
+        decomp.left_rank != MPI_PROC_NULL || decomp.right_rank != MPI_PROC_NULL;
+    if (!has_migration_neighbors) {
+        ants = std::move(finished);
+        return result;
+    }
+
     exchange_migrants_with_neighbors(decomp, outgoing, active, send_flat, recv_flat, comm, result.migration_time);
 
     int local_active = static_cast<int>(active.size());
