@@ -35,7 +35,7 @@
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
-\newcommand{\safeincludegraphics}[2][]{%
+\providecommand{\safeincludegraphics}[2][]{%
     \IfFileExists{#2}{\includegraphics[#1]{#2}}{%
         \fbox{\parbox[c][0.18\textheight][c]{0.92\linewidth}{\centering Figure unavailable}}%
     }%
@@ -82,11 +82,9 @@ The importance of this optimization lies in its ability to address problems in w
 
 In this context, the imminent need emerges to incorporate scalability and parallelization strategies for ACO, aimed at reducing the execution time of each algorithm by decreasing the computational load and facilitating the treatment of even larger entities. For this reason, the present document addresses parallelization with shared memory through OpenMP, as well as two different distributed-memory parallelization strategies using MPI, with the objective of improving the handling of large instances in the description of the collective behavior of ants.
 \subimport{sections/}{times.tex}
-\subimport{sections/}{openmp.tex}
-\subimport{sections/}{mpi_population.tex}
-\subimport{sections/}{subdomain.tex}
 \subimport{sections/}{vectorization.tex}
 \subimport{sections/}{openmp.tex}
+\subimport{sections/}{mpi_population.tex}
 \subimport{sections/}{subdomain.tex}
 
 \clearpage
