@@ -27,3 +27,8 @@ Additionally, general simulation information is stored, including the number of 
 \hline
 \end{tabular}
 \end{table}
+
+\subsection{Algorithmic Equivalence}
+A general methodology is proposed for the analysis of the general behavior of the parallelization strategies that are proposed to be implemented within the methodological framework of the stated problem. In the first place, a generalized execution and comparison framework is proposed, corresponding to the execution of the algorithm until the first food item reaches the nest and the 10 subsequent iterations. In this context, it is intended that the results provided by all the algorithms make it possible to identify the number of iterations at which this milestone is reached in the simulation, with the idea of verifying that this number is the same for ant colonies of the same size and, in this way, verifying that the simulated dynamics are in fact equivalent and therefore that their results are comparable.
+
+It is also proposed to record the amount of food that reaches the nest during those 10 subsequent iterations as a sample of equivalence in the dynamics of the colony after the arrival of the first food item. Under this criterion, the common observation window is not defined only by a fixed number of iterations, but by a shared behavioral event in the simulation, which makes it possible to compare the different implementations from an equivalent point in the evolution of the colony. In this way, the comparison framework is intended not only to contrast execution times, but also to verify that the underlying simulated behavior remains consistent across the different parallelization strategies.

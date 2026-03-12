@@ -21,8 +21,6 @@ The pheromone system is organized into two channels, each of which has its own m
 In terms of the exchange, instead of sending \texttt{v1} and \texttt{v2} separately between the subdomains, what is done is to pack them into a single interleaved buffer, for each one of the cells at the boundary of the subdomains. This provides a reduction in the number of messages to be sent with respect to independent fields, mainly because the communication costs exceed the cache-query costs associated with the buffer.
 
 
-
-
 \subsection{Ant migration}
 
 
@@ -63,14 +61,14 @@ It is therefore proposed to analyze the results of the MPI parallelization based
 \centering
 \begin{minipage}{0.48\columnwidth}
     \centering
-    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_food10/plots/mpi_total_breakdown_ants5000.png}
+    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_full_food/plots/mpi_total_breakdown_ants5000.png}
     \\[-2mm]
     {\footnotesize (a) 5000 ants}
 \end{minipage}
 \hfill
 \begin{minipage}{0.48\columnwidth}
     \centering
-    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_food10/plots/mpi_total_breakdown_ants40000.png}
+    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_full_food/plots/mpi_total_breakdown_ants40000.png}
     \\[-2mm]
     {\footnotesize (b) 40000 ants}
 \end{minipage}
@@ -78,7 +76,7 @@ It is therefore proposed to analyze the results of the MPI parallelization based
 \vspace{1mm}
 \begin{minipage}{0.62\columnwidth}
     \centering
-    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_food10/plots/mpi_total_breakdown_ants160000.png}
+    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_full_food/plots/mpi_total_breakdown_ants160000.png}
     \\[-2mm]
     {\footnotesize (c) 160000 ants}
 \end{minipage}
