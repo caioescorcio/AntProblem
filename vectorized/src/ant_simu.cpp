@@ -198,7 +198,9 @@ int main(int argc, char* argv[]) {
     ants.reserve(nb_ants);
     auto gen_ant_pos = [&land, &seed]() { return rand_int32(0, static_cast<int>(land.dimensions() - 1), seed); };
     for (std::size_t i = 0; i < nb_ants; ++i) {
-        ants.add_ant(position_t{gen_ant_pos(), gen_ant_pos()}, seed);
+        // Sequence position generation before storing the per-ant RNG state.
+        const position_t pos{gen_ant_pos(), gen_ant_pos()};
+        ants.add_ant(pos, seed);
     }
 
     pheronome phen(land.dimensions(), pos_food, pos_nest, alpha, beta);
