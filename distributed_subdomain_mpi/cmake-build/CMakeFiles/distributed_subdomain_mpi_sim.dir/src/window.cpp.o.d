@@ -1,7 +1,7 @@
 CMakeFiles/distributed_subdomain_mpi_sim.dir/src/window.cpp.o: \
- /home/santiago/OS202/AntRefactor/distributed_subdomain_mpi/src/window.cpp \
+ /home/santiago/OS202/AntProblem/distributed_subdomain_mpi/src/window.cpp \
  /usr/include/stdc-predef.h \
- /home/santiago/OS202/AntRefactor/distributed_subdomain_mpi/src/../include/window.hpp \
+ /home/santiago/OS202/AntProblem/distributed_subdomain_mpi/src/../include/window.hpp \
  /usr/include/SDL2/SDL.h /usr/include/SDL2/SDL_main.h \
  /usr/include/SDL2/SDL_stdinc.h /usr/include/SDL2/SDL_config.h \
  /usr/include/x86_64-linux-gnu/SDL2/_real_SDL_config.h \

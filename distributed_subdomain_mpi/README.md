@@ -42,8 +42,8 @@ Start from `vectorized/` as base, then copy structure into this folder:
 - insert received ants from neighbors
 
 4. `src/renderer.cpp` and rendering usage in `src/ant_simu.cpp`
-- keep rendering only on rank 0 (or disable in MPI runs)
-- if rendering is kept, gather a lightweight visualization payload on rank 0
+- when rendering is enabled and more than one MPI rank is launched, reserve world rank 0 as a dedicated render rank
+- decompose the terrain only across compute ranks, and gather a lightweight visualization payload from compute rank 0 to the dedicated render rank
 
 5. `README.md` (inside this folder)
 - document domain decomposition, communication pattern, and benchmark protocol

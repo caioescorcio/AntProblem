@@ -2,7 +2,7 @@ include Make_linux.inc
 #include Make_msys2.inc
 #include Make_osx.inc
 
-CXXFLAGS_BASE = -std=c++17 -Iinclude
+CXXFLAGS_BASE = -std=c++17 -ffp-contract=off -Iinclude
 
 ifeq ($(DEBUG),yes)
 CXXFLAGS2 ?= $(CXXFLAGS_BASE) -g -O0 -Wall -fbounds-check -pedantic -D_GLIBCXX_DEBUG

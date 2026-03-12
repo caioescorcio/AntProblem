@@ -647,7 +647,6 @@ int main(int argc, char* argv[]) {
         {
             const double t0 = MPI_Wtime();
             mpi_subdomain::begin_pheromone_halo_exchange(decomp, local_phen.current_channel(0), local_phen.current_channel(1), halo_exchange_state, comm);
-            local_phen.copy_current_to_buffer();
             mpi_subdomain::end_pheromone_halo_exchange(decomp, local_phen.current_channel(0), local_phen.current_channel(1), halo_exchange_state);
             halo_ms_local = (MPI_Wtime() - t0) * 1000.0;
         }

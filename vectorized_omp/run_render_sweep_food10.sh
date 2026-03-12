@@ -10,7 +10,7 @@ RESULTS_DIR="results/sweeps_render_food10"
 mkdir -p "$RESULTS_DIR"
 
 ANTS_LIST=(5000 10000 20000 40000 80000 160000)
-THREADS_LIST=(2 3 4 5 6 7 8 9 10 11 12)
+THREADS_LIST=(1 2 3 4 5 6 7 8 9 10 11 12)
 
 for ants in "${ANTS_LIST[@]}"; do
   for threads in "${THREADS_LIST[@]}"; do
