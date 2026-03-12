@@ -213,8 +213,10 @@ int main(int argc, char* argv[])
     std::vector<ant> ants;
     ants.reserve(nb_ants);
     auto gen_ant_pos = [&land, &seed]() { return rand_int32(0, land.dimensions()-1, seed); };
-    for (std::size_t i = 0; i < static_cast<std::size_t>(nb_ants); ++i)
-        ants.emplace_back(position_t{gen_ant_pos(),gen_ant_pos()}, seed);
+    for (std::size_t i = 0; i < static_cast<std::size_t>(nb_ants); ++i) {
+        const position_t pos{gen_ant_pos(), gen_ant_pos()};
+        ants.emplace_back(pos, seed);
+    }
     // Create the pheromone map.
     pheronome phen(land.dimensions(), pos_food, pos_nest, alpha, beta);
 

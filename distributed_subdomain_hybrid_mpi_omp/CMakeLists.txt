@@ -68,6 +68,10 @@ if(DMPI_ENABLE_WARNINGS)
     endif()
 endif()
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(distributed_subdomain_hybrid_mpi_omp_sim PRIVATE -ffp-contract=off)
+endif()
+
 set_target_properties(distributed_subdomain_hybrid_mpi_omp_sim PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build"
 )
