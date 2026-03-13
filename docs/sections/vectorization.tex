@@ -23,3 +23,61 @@ Regarding changes in code execution, the ant-by-ant iterations (\texttt{ant.adva
 \hline
 \end{tabular}
 \end{table}
+
+As a concrete execution reference, Table~\ref{tab:vectorized_threads1_ants5000} summarizes the measured timing statistics for the vectorized implementation with 1 thread and 5000 ants.
+
+\begin{table}[!htbp]
+\centering
+\caption{Measured timing statistics for the vectorized implementation with 1 thread and 5000 ants.}
+\label{tab:vectorized_threads1_ants5000}
+\scriptsize
+\setlength{\tabcolsep}{2.8pt}
+\renewcommand{\arraystretch}{1.08}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{Metric} & \textbf{Count} & \textbf{Total [ms]} & \textbf{Mean [ms]} & \textbf{Min [ms]} & \textbf{Max [ms]} \\
+\midrule
+\texttt{event\_poll} & 2572 & 46.460 & 0.018 & 0.005 & 2.078 \\
+\texttt{ants\_advance} & 2572 & 4066.480 & 1.581 & 1.055 & 17.091 \\
+\texttt{evaporation} & 2572 & 595.731 & 0.232 & 0.174 & 1.560 \\
+\texttt{update} & 2572 & 12.027 & 0.005 & 0.003 & 0.075 \\
+\texttt{advance\_total} & 2572 & 4674.238 & 1.817 & 1.272 & 17.345 \\
+\texttt{render} & 2572 & 34719.709 & 13.499 & 2.212 & 32.528 \\
+\texttt{blit} & 2572 & 39747.467 & 15.454 & 0.364 & 17.721 \\
+\texttt{iteration\_total} & 2572 & 79188.906 & 30.789 & 15.152 & 46.137 \\
+\bottomrule
+\end{tabular}%
+}
+\par\vspace{2pt}\parbox{\columnwidth}{\raggedright\footnotesize\textit{Note.} Additional run metadata: \texttt{total\_iterations}=2572, \texttt{measured\_iterations}=2572, \texttt{final\_food\_quantity}=1, and \texttt{first\_food\_iteration}=2562.}
+\end{table}
+
+Table~\ref{tab:vectorization_improvement_threads1_ants5000} compares the average per-iteration times of the non-vectorized and vectorized implementations and reports the percentage improvement obtained by vectorization.
+
+\begin{table}[!htbp]
+\centering
+\caption{Percentage improvement in mean per-iteration times of the vectorized implementation with respect to the non-vectorized implementation for 1 thread and 5000 ants.}
+\label{tab:vectorization_improvement_threads1_ants5000}
+\scriptsize
+\setlength{\tabcolsep}{2.8pt}
+\renewcommand{\arraystretch}{1.08}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Metric} & \textbf{Non-vectorized mean [ms]} & \textbf{Vectorized mean [ms]} & \textbf{Improvement [\%]} \\
+\midrule
+\texttt{event\_poll} & 0.021 & 0.018 & 14.985 \\
+\texttt{ants\_advance} & 1.594 & 1.581 & 0.806 \\
+\texttt{evaporation} & 0.358 & 0.232 & 35.387 \\
+\texttt{update} & 0.003 & 0.005 & -36.247 \\
+\texttt{advance\_total} & 1.956 & 1.817 & 7.080 \\
+\texttt{render} & 13.361 & 13.499 & -1.033 \\
+\texttt{blit} & 15.449 & 15.454 & -0.034 \\
+\texttt{iteration\_total} & 30.787 & 30.789 & -0.005 \\
+\bottomrule
+\end{tabular}%
+}
+\par\vspace{2pt}\parbox{\columnwidth}{\raggedright\footnotesize\textit{Note.} The reported improvement is computed as $(T_{\text{nonvec}} - T_{\text{vec}})/T_{\text{nonvec}} \times 100$. Positive values indicate lower mean time in the vectorized implementation, whereas negative values indicate a slowdown.}
+\end{table}
+
+Showing that the vectorization strategy, by favoring the principle of locality in the simulation, mainly in the ant population, favors the optimization of the calculation of their advance, showing an improvement in the average advance time per iteration of close to 7\%. Additionally, the importance of the vectorized implementation, beyond an improvement in sequential execution, is emphasized through the structuring of the data and functions of the simulation in such a way that the implementation of optimizations with shared and distributed memory is favored in the following selections.
