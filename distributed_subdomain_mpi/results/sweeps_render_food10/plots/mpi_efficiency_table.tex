@@ -1,0 +1,28 @@
+% Auto-generated. Do not edit by hand.
+\begin{table}[!htbp]
+\centering
+\caption{MPI compute efficiency for all colony sizes and MPI process counts.}
+\label{tab:mpi_efficiency}
+\normalsize
+\setlength{\tabcolsep}{2.4pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Proc/Ants} & \textbf{5k} & \textbf{10k} & \textbf{20k} & \textbf{40k} & \textbf{80k} & \textbf{160k} \\
+\midrule
+1 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+2 & 0.76 & 0.76 & 1.01 & 0.81 & 0.85 & 0.83 \\
+3 & 0.57 & 0.60 & 0.65 & 0.61 & 0.61 & 0.63 \\
+4 & 0.50 & 0.47 & 0.67 & 0.55 & 0.61 & 0.47 \\
+5 & 0.32 & 0.31 & 0.43 & 0.38 & 0.39 & 0.41 \\
+6 & 0.40 & 0.27 & 0.41 & 0.35 & 0.34 & 0.34 \\
+7 & 0.27 & 0.25 & 0.39 & 0.31 & 0.34 & 0.34 \\
+8 & 0.23 & 0.22 & 0.34 & 0.29 & 0.30 & 0.31 \\
+9 & 0.19 & 0.20 & 0.29 & 0.24 & 0.26 & 0.26 \\
+10 & 0.18 & 0.19 & 0.28 & 0.23 & 0.25 & 0.25 \\
+11 & 0.16 & 0.19 & 0.28 & 0.23 & 0.25 & 0.27 \\
+12 & 0.16 & 0.19 & 0.26 & 0.23 & 0.24 & 0.25 \\
+\bottomrule
+\end{tabular}
+\par\vspace{2pt}\parbox{\columnwidth}{\raggedright\footnotesize\textit{Note.} The compute metric is $advance\_total + mpi\_halo\_exchange + mpi\_migration + mpi\_food\_allreduce$, matching the MPI compute plots. Efficiency is computed with respect to the number of compute MPI processes only; rendering is excluded from the process count. For each colony size, the baseline is the smallest available MPI process count $p_0$. Each cell reports efficiency $E=S/(p/p_0)$.}
+\end{table}

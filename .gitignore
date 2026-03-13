@@ -40,4 +40,58 @@
 # debug information files
 *.dwo
 
+# build
+build
+external
+
 parallelisation/build
+# IDE
+.vscode/
+
+# Python cache
+**/__pycache__/
+**/*.py[cod]
+
+# LaTeX auxiliary output for report
+docs/.latex_aux/
+docs/*.aux
+docs/*.bbl
+docs/*.blg
+docs/*.fdb_latexmk
+docs/*.fls
+docs/*.log
+docs/*.lof
+docs/*.lot
+docs/*.out
+docs/*.synctex.gz
+docs/*.toc
+
+# Build directories (any project folder)
+**/build/
+**/cmake-build*/
+**/CMakeFiles/
+**/Testing/
+
+# CMake generated files
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/compile_commands.json
+**/CTestTestfile.cmake
+**/install_manifest.txt
+**/Makefile
+
+# Object files and dependency files
+**/*.o
+**/*.obj
+**/*.lo
+**/*.d
+
+# Binaries and libraries
+**/*.exe
+**/*.out
+**/*.app
+**/*.a
+**/*.so
+**/*.so.*
+**/*.dylib
+**/*.dll

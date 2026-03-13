@@ -1,0 +1,114 @@
+\section{Distributed-memory population decomposition}
+
+In this section, a distributed-memory parallelization paradigm using the Message Passing Interface (MPI) is explored. This strategy maintains a fully replicated pheromone map on each MPI process while dividing the computational load associated with the entities. Specifically, the total ant population is partitioned equally among the $P$ available MPI ranks (i.e., $N_{local} = N_{total}/P$). The ants independently traverse the entirely replicated fractal landscape and interact with their local copy of the pheromone grid.
+
+During the initialization phase, the \texttt{MPI\_Init}, \texttt{MPI\_Comm\_rank}, and \texttt{MPI\_Comm\_size} routines are utilized to determine the global execution context. Each rank uniquely seeds its random number generator and instantiates exactly its assigned subset of ants starting at the shared nest location.
+
+\subsection{Global pheromone synchronization}
+
+Because the ants evaluate movement constraints and deposit pheromones locally, the distributed pheromone maps inherently diverge at the end of the advancement phase. To maintain simulation correctness and consistency, these local maps must be merged into a single global map at the end of each iteration before the subsequent movement step is executed.
+
+This synchronization is achieved using the \texttt{MPI\_Allreduce} collective algorithm operating over the dense map buffers. When ants mark the terrain, the algorithm applies the \texttt{MPI\_MAX} reduction operator. This mechanism ensures that if any process detects a newly laid pheromone trail, it propagates to all other processes, effectively computing the upper bound across the distributed grids. Similarly, following the parallel distributed evaporation stage—where each rank is responsible for evaporating a designated subset of the grid's rows—a secondary \texttt{MPI\_Allreduce} utilizing the \texttt{MPI\_MIN} operator merges the evaporated trails by capturing the smallest value across all ranks.
+
+Finally, global simulation states, such as the iteration loop continuation flag and the total food collected, are synchronized via \texttt{MPI\_Bcast} and \texttt{MPI\_Allreduce} (with \texttt{MPI\_SUM}), respectively. For rendering purposes, the visualization rank (rank 0) collects all scattered ant coordinates from the compute ranks using \texttt{MPI\_Gather}.
+
+\subsection{Results analysis}
+For the performance analysis, it is more appropriate to focus on the headless version of the implementation, since it has already been observed that, for the ant-population sizes considered in this study, the overhead introduced by rendering is very high when compared with the cost associated with computation and communication. Moreover, rendering is not readily amenable to further parallelization, which means that its contribution can dominate the total execution time and mask the actual behavior of the numerical core of the algorithm.
+
+For this reason, the evaluation of the proposed parallelization strategy is carried out using the version without rendering. This makes it possible to isolate the computational and communication costs that are directly associated with the algorithmic solution and, consequently, to obtain a more representative view of the real impact of parallelization on performance. In this way, the analysis is centered on the parts of the implementation that can actually benefit from distributed-memory optimization, avoiding distortions caused by a graphical stage whose cost is both significant and largely insensitive to the increase in computing resources.
+
+The performance of the MPI population decomposition can be evaluated through the total execution-time breakdowns illustrated in Fig.~\ref{fig:pop_total_breakdown_selected}. It is immediately evident that while the ant movement (\texttt{ants\_advance}) dominates the computational cost at low process counts, the communication overhead rapidly takes over as the dominant factor when more ranks are introduced.
+
+When considering only the computational phase, the division of the ant population achieves a highly favorable strong scaling behavior. As demonstrated in Fig.~\ref{fig:pop_calc_only_selected} and Fig.~\ref{fig:pop_speedup_selected}, the workload dedicated to evaluating heuristic rules and updating ant positions decreases almost linearly with the number of processes. This nearly linear scaling and the corresponding parallel efficiency metrics are quantitatively detailed in the generated speedup and efficiency tables. Because the ants act independently on their local maps, the numerical core balances perfectly without the need for complex ghost-cell boundary logic.
+
+However, as the process count continues to increase, the overall speedup experiences a severe plateau and eventually degrades. This bottleneck arises directly from the communication overhead required for the global pheromone synchronization. The \texttt{MPI\_Allreduce} collective operates on the entire 1024x1024 double-precision grid (approximately 8 MB per buffer). Executing two global reductions (\texttt{MPI\_MAX} and \texttt{MPI\_MIN}) every iteration demands substantial network bandwidth, transforming a constant-sized data merge into a severe scaling limitation.
+
+The impact of this bottleneck is highly dependent on the problem size. For smaller colonies, such as 5000 ants, the computational workload is too light; the map synchronization cost dwarfs the ant computation almost immediately, leading to a disproportionately large parallelization overhead. Conversely, larger colonies (e.g., 40000 and 160000 ants) provide enough useful work to hide a portion of the communication overhead, pushing the scaling limit slightly higher before the network bandwidth is saturated.
+
+Ultimately, this communication penalty effectively limits the theoretical acceleration predicted by Amdahl's Law. While entity-based workload division is conceptually simpler and computationally efficient, the associated cost of maintaining global map coherence makes it structurally unsuited for massive scale-out, resulting in a regime of diminishing returns that is reached much faster than in the localized subdomain decomposition model.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../optmz1/src/results/mpi_sweep/plots/mpi_total_breakdown_ants5000.png}
+    \\[-2mm]
+    {\footnotesize (a) 5000 ants}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../optmz1/src/results/mpi_sweep/plots/mpi_total_breakdown_ants40000.png}
+    \\[-2mm]
+    {\footnotesize (b) 40000 ants}
+\end{minipage}
+
+\vspace{1mm}
+\begin{minipage}{0.62\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../optmz1/src/results/mpi_sweep/plots/mpi_total_breakdown_ants160000.png}
+    \\[-2mm]
+    {\footnotesize (c) 160000 ants}
+\end{minipage}
+\caption{MPI population decomposition total iteration-time breakdown for selected colony sizes, showing communication overhead dominating at high process counts.}
+\label{fig:pop_total_breakdown_selected}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../optmz1/src/results/mpi_sweep/plots/mpi_calc_speedup_ants5000.png}
+    \\[-2mm]
+    {\footnotesize (a) 5000 ants}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../optmz1/src/results/mpi_sweep/plots/mpi_calc_speedup_ants40000.png}
+    \\[-2mm]
+    {\footnotesize (b) 40000 ants}
+\end{minipage}
+
+\vspace{1mm}
+\begin{minipage}{0.62\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../optmz1/src/results/mpi_sweep/plots/mpi_calc_speedup_ants160000.png}
+    \\[-2mm]
+    {\footnotesize (c) 160000 ants}
+\end{minipage}
+\caption{MPI population computation speedup (with and without communication) for selected colony sizes.}
+\label{fig:pop_speedup_selected}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../optmz1/src/results/mpi_sweep/plots/mpi_calc_only_ants5000.png}
+    \\[-2mm]
+    {\footnotesize (a) 5000 ants}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../optmz1/src/results/mpi_sweep/plots/mpi_calc_only_ants40000.png}
+    \\[-2mm]
+    {\footnotesize (b) 40000 ants}
+\end{minipage}
+
+\vspace{1mm}
+\begin{minipage}{0.62\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../optmz1/src/results/mpi_sweep/plots/mpi_calc_only_ants160000.png}
+    \\[-2mm]
+    {\footnotesize (c) 160000 ants}
+\end{minipage}
+\caption{MPI population computation-only breakdown for selected colony sizes.}
+\label{fig:pop_calc_only_selected}
+\end{figure}
+
+\IfFileExists{../../optmz1/src/results/mpi_sweep/plots/mpi_speedup_table.tex}{\input{../../optmz1/src/results/mpi_sweep/plots/mpi_speedup_table.tex}}{}
+\IfFileExists{../../optmz1/src/results/mpi_sweep/plots/mpi_efficiency_table.tex}{\input{../../optmz1/src/results/mpi_sweep/plots/mpi_efficiency_table.tex}}{}
+
+\FloatBarrier

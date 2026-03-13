@@ -91,7 +91,7 @@ int main(int nargs, char* argv[])
         counter.print_averages();
         win.blit();
         if ( not_food_in_nest && food_quantity > 0 ) {
-            std::cout << "La première nourriture est arrivée au nid a l'iteration " << it << std::endl;
+            std::cout << "La premiere nourriture est arrivee au nid a l'iteration " << it << std::endl;
             not_food_in_nest = false;
         }
         //SDL_Delay(10);

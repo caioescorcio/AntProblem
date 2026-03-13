@@ -1,0 +1,21 @@
+% Auto-generated. Do not edit by hand.
+\begin{table}[!htbp]
+\centering
+\caption{MPI compute speedup for all colony sizes and MPI process counts.}
+\label{tab:mpi_speedup}
+\normalsize
+\setlength{\tabcolsep}{2.4pt}
+\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Proc/Ants} & \textbf{5k} & \textbf{40k} & \textbf{160k} \\
+\midrule
+1 & 1.00 & 1.00 & 1.00 \\
+2 & 0.26 & 0.71 & 1.34 \\
+4 & 0.13 & 0.60 & 1.29 \\
+6 & 0.05 & 0.27 & 0.66 \\
+8 & 0.06 & 0.31 & 0.63 \\
+\bottomrule
+\end{tabular}
+\par\vspace{2pt}\parbox{\columnwidth}{\raggedright\footnotesize\textit{Note.} The compute metric is $advance\_total + mpi\_halo\_exchange + mpi\_migration + mpi\_food\_allreduce$, matching the MPI compute plots. Efficiency is computed with respect to the number of compute MPI processes only; rendering is excluded from the process count. For each colony size, the baseline is the smallest available MPI process count $p_0$. Each cell reports speedup $S=T(p_0)/T(p)$.}
+\end{table}

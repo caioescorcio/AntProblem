@@ -1,0 +1,222 @@
+\section{Distributed subdomain mpi}
+
+% \newcommand{\safeincludegraphics}[2][]{%
+%     \IfFileExists{#2}{\includegraphics[#1]{#2}}{%
+%         \fbox{\parbox[c][0.18\textheight][c]{0.92\linewidth}{\centering Figure unavailable}}%
+%     }%
+% }
+
+In this section, the implementation of an optimization strategy over the fractal domain is proposed based on the decomposition of the terrain into two-dimensional subdomains, which are managed by each MPI process. Each one is responsible for managing one of these subdomains in the map, considering the boundary effects between two-dimensional subdomains through the concept of ghost cells. Additionally, only the logic for generating a global terrain is preserved in the root node for data collection and subsequent rendering. In the rendered MPI runs, when more than one rank is available, world rank 0 is reserved exclusively for visualization and is excluded from the Cartesian decomposition; therefore, the subdomains are assigned only to the compute ranks. In order to make that separation explicit, the implementation now keeps two communicators: a \texttt{compute\_comm} for global reductions and rank-wide control among compute processes only, and a \texttt{cart\_comm} for neighborhood exchanges tied to the Cartesian topology. The automated sweeps used for the plots now run headless by default; rendered executions are kept for exploratory runs, with the synchronous path as baseline and an optional \texttt{--async-render} flag for a decoupled render path.
+
+The domain decomposition is constructed through a 2D MPI Cartesian topology. For this, \texttt{MPI\_Dims\_create} is used for the automatic factorization of the processes into a two-dimensional mesh of dimensions. Then, Cartesian communicators are created for the direct neighbors in the four directions: up, down, left, and right. In this way, each of the processes knows its Cartesian coordinates associated with the fractal terrain, as well as its local size and offset in both directions.
+
+In addition to the interior block, each of the processes preserves a ghost-cell crown of thickness determined by parameterization in the case of the simulation, which is taken into account for local storage in the stride variables. The memory linear accesses as well as the indexations are performed considering the effect of those ghost cells that are implemented for the management of the neighborhood of the subdomains and the boundary conditions. It is this ghost-cell structure that makes it possible for MPI communication not to be required for each one of the ants that is located at the edge or boundary of its subdomain, considering that the algorithm only needs the immediate neighbors at a single-cell distance; therefore, a single layer of thickness 1 is sufficient to satisfy the algorithmic requirement.
+
+The exchange of ghost cells for the fields that are static during the simulation, as in the case of the terrain and the cell type, is carried out with a classical one-halo-layer-per-boundary policy. Each process packs its first and last interior row for up/down, and its first and last interior column for left/right; then it launches non-blocking \texttt{MPI\_Irecv} and \texttt{MPI\_Isend} with the corresponding neighbors.
+
+
+\subsection{Pheromone system}
+The pheromone system is organized into two channels, each of which has its own memory buffer, which allows the distinction of two trails with a different semantics: an ant without load consults channel 0, while a loaded ant consults channel 1. To avoid coherence problems between the current pheromone state and the next one, two copies are preserved, one current and one next, so that all ants read the current version but write to the next version, and at the end of the step the exchange or swap is performed.
+
+In terms of the exchange, instead of sending \texttt{v1} and \texttt{v2} separately between the subdomains, what is done is to pack them into a single interleaved buffer, for each one of the cells at the boundary of the subdomains. This provides a reduction in the number of messages to be sent with respect to independent fields, mainly because the communication costs exceed the cache-query costs associated with the buffer.
+
+
+\subsection{Ant migration}
+
+
+When an ant, as part of its movement, crosses a boundary and therefore the destination cell no longer belongs to the process to which this ant is assigned, a \texttt{TransitAnt} is constructed that contains the information associated with the properties of the ant, including the information for the pheromone update in the cell into which the ant enters before migration. The migration protocol is implemented with two neighborhood collectives over the Cartesian communicator. First, each process exchanges with its four neighbors the counts of outgoing ants per direction (up/down/left/right) by using \texttt{MPI\_Neighbor\_alltoall}. Then, with the received counts, it exchanges the payload arrays through \texttt{MPI\_Neighbor\_alltoallv} with \texttt{MPI\_BYTE}, transmitting contiguous blocks of \texttt{TransitAnt} with size \texttt{count * sizeof(TransitAnt)}.
+
+Finally, it concatenates what is received into an \texttt{active} vector. The ants that arrive at the process do not mean that they have already completed their step; that is why it calls \texttt{process\_single\_ant(...)} on each received active ant. That function continues the movement from the partial state of the ant; and if during that continuation it crosses another boundary again, it sends it again to another neighbor. The loop is not exited until the entire system remains ``at rest'' with respect to migrations, that is, until there is no ant pending to complete its distributed step. The global active-ant total is computed with \texttt{MPI\_Iallreduce(..., MPI\_SUM, ...)} and checked periodically (not every migration round), reducing global synchronization frequency while preserving the same completion criterion (\texttt{global\_active == 0}).
+
+
+\subsection{Time measurement}
+
+Given the particular conditions of the fractal-terrain partitioning and the ownership of ants over two-dimensional subdomains, it is necessary to add new timing measurements in order to identify the computational costs of the strategies implemented for parallelization with distributed memory. The time \texttt{mpi\_halo\_exchange} is included to measure the time taken by the halo exchange of pheromones in each iteration, which accounts for the communication time associated with the fixed neighborhood imposed by the spatial decomposition.
+
+\texttt{mpi\_migration} measures the time spent within \texttt{advance} in the exchange of ants between one rank and another, and is therefore responsible for measuring the cost associated with the distribution of the ant population across the subdomains handled by the processes. If the execution effectively has a single compute rank (for example, two world ranks with one dedicated only to rendering), that metric becomes zero because there is no distributed migration path to execute. For its part, the variable \texttt{mpi\_food\_allreduce} accounts for the blocking wait time associated with the non-blocking global food reduction (\texttt{MPI\_Iallreduce + MPI\_Wait}), after overlapping part of that communication with local computation.
+
+\texttt{mpi\_render\_comm} measures \texttt{gather\_state\_for\_render(...)}, that is, the collection of the distributed state toward the render root in order to render pheromones and ants in a single global view. When a dedicated render rank is active, this metric also includes the relay of the assembled global frame from the compute root to world rank 0. In the default synchronous mode, each iteration waits for the render rank to finish the current frame before advancing, so the metric reflects the full communication cost required by the baseline rendered execution. When \texttt{--async-render} is enabled, the render path becomes asynchronous with respect to the numerical core: the render rank requests a frame when it is ready, and the compute side only gathers and relays the most recent state on demand. In that optional mode, \texttt{mpi\_render\_comm}, \texttt{event\_poll}, \texttt{render}, and \texttt{blit} can be zero in iterations where no frame hand-off occurs, which reflects a dropped or deferred frame rather than missing simulation work. Finally, \texttt{halo\_ms\_local + migration\_ms\_local + food\_allreduce\_ms\_local + render\_comm\_ms\_local} are accumulated into \texttt{mpi\_total\_comm}, which accounts for the fraction of the total time spent in communication between MPI processes. Additionally, to reduce synchronization overhead in reporting, per-iteration timing reductions are aggregated and reduced in batches instead of reducing every metric in every iteration.
+
+\begin{table}[htbp]
+\centering
+\caption{Additional MPI communication timing metrics.}
+\label{tab:mpi_timing_summary}
+\begin{tabular}{p{0.30\linewidth} p{0.58\linewidth}}
+\hline
+\textbf{Time metric} & \textbf{Brief description} \\
+\hline
+\texttt{mpi\_halo\_exchange} & Pheromone halo exchange. \\
+\texttt{mpi\_migration} & Ant migration between ranks. \\
+\texttt{mpi\_food\_allreduce} & Global food reduction. \\
+\texttt{mpi\_render\_comm} & State gathering for rendering. \\
+\texttt{mpi\_total\_comm} & Total MPI communication time. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Results analysis}
+
+It is therefore proposed to analyze the results of the MPI parallelization based on the subdivision into subdomains, and two elements become evident. The first is that the bottleneck in the execution of the simulations, both in the subdomain-based parallelization and in the other parallelization strategies that have been analyzed, lies in the graphical part of the algorithm as shown in Fig.~\ref{fig:mpi_total_breakdown_selected}. Even in the case in which the number of ants, and therefore the number of computational operations, grows up to 320000 ants in the colony, this causes the effect of the parallelization not to become necessarily evident in the analysis of the total time of each iteration in the simulation.In particular, the decomposition by components reveals that the computational stage preserves a favorable tendency with the increase in the number of processes, whereas the visual stage keeps a relatively high weight per iteration. This behavior explains why the global metric can suggest weak scaling even when the numerical core is effectively accelerated by the distributed scheme. Therefore, if the analysis is carried out only for the processing time and, consequently, the headless version of the algorithms is used in the comparison, implying that neither the \texttt{blit}, nor the rendering, nor the accumulation into a single process in the case of the subdivision by MPI domains is taken into account, the dynamics with respect to parallelization vary considerably. Additionally, it is worth emphasizing that, in the headless execution mode for the MPI subdomains, since there is no process dedicated exclusively to rendering, each of the processes is assigned a subdomain; this is why it is possible to use from 1 process onward in the comparison between parallelization methods. 
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_full_food/plots/mpi_total_breakdown_ants5000.png}
+    \\[-2mm]
+    {\footnotesize (a) 5000 ants}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_full_food/plots/mpi_total_breakdown_ants40000.png}
+    \\[-2mm]
+    {\footnotesize (b) 40000 ants}
+\end{minipage}
+
+\vspace{1mm}
+\begin{minipage}{0.62\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_full_food/plots/mpi_total_breakdown_ants160000.png}
+    \\[-2mm]
+    {\footnotesize (c) 160000 ants}
+\end{minipage}
+\caption{MPI subdomain total iteration-time breakdown for selected colony sizes.}
+\label{fig:mpi_total_breakdown_selected}
+\end{figure}
+
+When the number of ants is small, as in the case of a colony of 5000 ants, it is possible to observe the effect produced by the incorporation of more processes in the acceleration of the computation, reaching a maximum close to 2 when communications between processes are considered. Nevertheless, when the speedup without communication is considered, a much more marked growth effect can be seen, reaching a speedup greater than 3 for 12 processes. However, this difference between the real speedup of the computation and the speedup without considering communication becomes increasingly larger as more subdomains are added in the representation of the fractal terrain and the communication between processes increases as depicted in Fig.~\ref{fig:mpi_speedup_selected} and Fig.~\ref{fig:mpi_calc_only_selected}. The increase in the size of the ant colony and the consequent increase in the number of performed computation operations account not only for a stable speedup dynamic as the colony size grows with respect to the number of processes, but also for increasing results, reaching speedups close to 3 for the complete computation and greater than 5 for the computation without communication in the best case with 12 processes, which is higher than the results obtained with small colonies. It is also important to clarify that, given the dynamics of the treatment of the problem, the percentage component of communication that intervenes in the computation becomes more and more representative as the number of processes increases, giving rise to a stagnation dynamic in the speedup for the configurations with the greatest number of processes.
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_food10/plots/mpi_calc_speedup_ants5000.png}
+    \\[-2mm]
+    {\footnotesize (a) 5000 ants}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_food10/plots/mpi_calc_speedup_ants40000.png}
+    \\[-2mm]
+    {\footnotesize (b) 40000 ants}
+\end{minipage}
+
+\vspace{1mm}
+\begin{minipage}{0.62\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_food10/plots/mpi_calc_speedup_ants160000.png}
+    \\[-2mm]
+    {\footnotesize (c) 160000 ants}
+\end{minipage}
+\caption{MPI subdomain computation speedup (with and without communication) for selected colony sizes. The associated efficiency is computed with respect to compute MPI processes only, excluding rendering.}
+\label{fig:mpi_speedup_selected}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_food10/plots/mpi_calc_only_ants5000.png}
+    \\[-2mm]
+    {\footnotesize (a) 5000 ants}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_food10/plots/mpi_calc_only_ants40000.png}
+    \\[-2mm]
+    {\footnotesize (b) 40000 ants}
+\end{minipage}
+
+\vspace{1mm}
+\begin{minipage}{0.62\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../distributed_subdomain_mpi/results/sweeps_render_food10/plots/mpi_calc_only_ants160000.png}
+    \\[-2mm]
+    {\footnotesize (c) 160000 ants}
+\end{minipage}
+\caption{MPI subdomain computation-only breakdown for selected colony sizes.}
+\label{fig:mpi_calc_only_selected}
+\end{figure}
+\IfFileExists{../../distributed_subdomain_mpi/results/sweeps_render_food10/plots/mpi_speedup_table.tex}{\input{../../distributed_subdomain_mpi/results/sweeps_render_food10/plots/mpi_speedup_table.tex}}{}
+\IfFileExists{../../distributed_subdomain_mpi/results/sweeps_render_food10/plots/mpi_efficiency_table.tex}{\input{../../distributed_subdomain_mpi/results/sweeps_render_food10/plots/mpi_efficiency_table.tex}}{}
+
+Nevertheless, it is evident that, unlike the case of parallelization with shared memory, there is an improvement in performance with the incorporation of processes which, although conditioned by the size of the buffers in which information is stored and also by the cost of communications, means that from the incorporation of more than one computation thread onward, the MPI parallelization shows, over the vast majority of the domain, a better performance per iteration than the OpenMP parallelization, as can be seen in Fig.~\ref{fig:mpi_vs_omp_calc_selected}.
+
+
+\begin{figure}[!htbp]
+\centering
+\safeincludegraphics[width=0.90\columnwidth]{../figures/compare_subdomain_omp/compare_calc_ants5000.png}
+\\[-2mm]
+{\footnotesize (a) 5000 ants}
+\vspace{1mm}
+\safeincludegraphics[width=0.90\columnwidth]{../figures/compare_subdomain_omp/compare_calc_ants40000.png}
+\\[-2mm]
+{\footnotesize (b) 40000 ants}
+\vspace{1mm}
+\safeincludegraphics[width=0.90\columnwidth]{../figures/compare_subdomain_omp/compare_calc_ants160000.png}
+\\[-2mm]
+{\footnotesize (c) 160000 ants}
+\caption{MPI subdomain vs OpenMP computation-only breakdown for selected colony sizes.}
+\label{fig:mpi_vs_omp_calc_selected}
+\end{figure}
+
+A relevant conclusion is that, as discussed, the scaling of the subdomain strategy is jointly constrained by the growth of communication overhead and the increasing memory-traffic pressure associated with migration buffers as both the process count and colony size rise. In practical terms, this means that the benefits of parallelization do not grow indefinitely, since a larger number of processes also introduces additional coordination costs and greater pressure on data movement. Consequently, although the inclusion of more processes improves performance over a broad operating region, the incremental benefit provided by each additional process becomes progressively smaller at high process counts. This behavior suggests that the system enters a regime of diminishing returns, where the computational advantages of distributing the workload are partially offset by communication and memory-access bottlenecks. This interpretation is consistent with the observed gap between the speedup with communication and the speedup without communication, which highlights the non-negligible impact of these overheads on overall scalability. Therefore, the results indicate that the efficiency of the subdomain strategy depends not only on increasing parallel resources, but also on controlling the communication patterns and memory demands that intensify as the problem size and level of parallelism grow.
+
+\subsection{Hybrid distributed subdomain}
+Considering the particularities of the solution implemented over the subdomains, the implementation of a hybrid model for the ant colonies is proposed, given that the cost of increasing the number of subdomains using MPI parallelization became evident, but it also became evident that the increase in subdomains causes a considerable increase in the number of communication operations between subdomains. Within this framework, hybrid integration is proposed as a solution so that each one of the subdomains has threads that execute in parallel with shared memory using OpenMP, as contrasted in Fig.~\ref{fig:hybrid_compare_calc_selected}. The objective is not necessarily to reengineer the algorithm, but rather to integrate shared-memory threads within each subdomain in order to increase parallelism in the computation without incurring the already mentioned costly communication costs associated with an increase in the number of subdomains into which the fractal terrain is decomposed. As in the MPI-only implementation, the automated hybrid sweeps used for these plots now run headless by default, while rendered runs remain available for exploratory testing.
+
+\begin{figure}[!t]
+\centering
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../figures/compare_omp_mpi_hybrid/compare3_calc_omp2_ants5000.png}
+    \\[-2mm]
+    {\footnotesize (a) OMP=2, 5000 ants}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../figures/compare_omp_mpi_hybrid/compare3_calc_omp3_ants5000.png}
+    \\[-2mm]
+    {\footnotesize (b) OMP=3, 5000 ants}
+\end{minipage}
+
+\vspace{1mm}
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../figures/compare_omp_mpi_hybrid/compare3_calc_omp2_ants40000.png}
+    \\[-2mm]
+    {\footnotesize (c) OMP=2, 40000 ants}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../figures/compare_omp_mpi_hybrid/compare3_calc_omp3_ants40000.png}
+    \\[-2mm]
+    {\footnotesize (d) OMP=3, 40000 ants}
+\end{minipage}
+
+\vspace{1mm}
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../figures/compare_omp_mpi_hybrid/compare3_calc_omp2_ants160000.png}
+    \\[-2mm]
+    {\footnotesize (e) OMP=2, 160000 ants}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../figures/compare_omp_mpi_hybrid/compare3_calc_omp3_ants160000.png}
+    \\[-2mm]
+    {\footnotesize (f) OMP=3, 160000 ants}
+\end{minipage}
+\caption{Hybrid OMP-only vs MPI-only vs MPI+OpenMP computation-only comparison for selected colony sizes. The left column corresponds to two OpenMP threads per subdomain and the right column corresponds to three OpenMP threads per subdomain. The associated efficiency is computed with respect to compute MPI processes only, excluding rendering.}
+\label{fig:hybrid_compare_calc_selected}
+\end{figure}
+\IfFileExists{../../distributed_subdomain_hybrid_mpi_omp/results/sweeps_render_food10/plots/hybrid_speedup_omp2_table.tex}{\input{../../distributed_subdomain_hybrid_mpi_omp/results/sweeps_render_food10/plots/hybrid_speedup_omp2_table.tex}}{}
+\IfFileExists{../../distributed_subdomain_hybrid_mpi_omp/results/sweeps_render_food10/plots/hybrid_efficiency_omp2_table.tex}{\input{../../distributed_subdomain_hybrid_mpi_omp/results/sweeps_render_food10/plots/hybrid_efficiency_omp2_table.tex}}{}
+
+From the results of the hybrid implementation, it becomes evident that when two threads are implemented for each process, the computation execution-time results improve according to the number of processes, in most cases even more when the number of ants is larger and the increase in the parallel computing units favors the reduction of computation time. When the loads are medium or large, however, it is still evident that the fragmentation of the domain continues to cause significant increases in the time associated with migration, which means that although the computation time improves, the improvement is not sufficiently significant with respect to MPI parallelization when the total computation time is considered, as can be seen in the results for two threads per subdomain, which is the number of threads per subdomain that showed the best result in the test simulations.
+
+It is also worth highlighting that when the number of MPI processes is increased and, in addition, the number of threads per rank is increased, each thread receives very few ants and the cost of coordinating those threads begins to consume an important part of the computation time, as can be seen in Fig.~\ref{fig:hybrid_compare_calc_selected}. For this reason, in the implementation of the hybrid model, too many threads per process become inefficient when the local subdomain is no longer sufficiently large, because the useful work per thread is not sufficiently significant and the cost of coordination and distribution of the results grows disproportionately with respect to the performance gain that it provides in the computation.

@@ -1,0 +1,64 @@
+
+\subsection{Simulation times measurement
+}
+The measured times are defined so as to separate the simulation into clearly differentiated phases, which makes it possible to identify the contribution of each operation to the overall computational cost. In \texttt{event\_poll} (see Table~\ref{tab:timing_summary}), the time spent handling SDL events is recorded, including window closing, basic interaction, and event-queue updates; this corresponds to interface overhead rather than algorithmic work.
+
+In \texttt{ants\_advance} (Table~\ref{tab:timing_summary}), the behavioral core of the ants is measured, including movement decisions, neighboring pheromone reads, food transport, collection accounting, and pheromone marking. In \texttt{evaporation} (Table~\ref{tab:timing_summary}), only the pheromone evaporation stage is measured, which is characterized by ordered memory traversal and conditional evaporation logic and is therefore favorable for locality- and vectorization-based optimization. In \texttt{update} (Table~\ref{tab:timing_summary}), the consolidation of the pheromone state at the end of the step is included, together with buffer exchanges, restoration of special cells, reimposition of nest and food sources, and map maintenance. Finally, \texttt{advance\_total} (Table~\ref{tab:timing_summary}) provides the most representative measure of the simulation core cost because it integrates \texttt{ants\_advance}, \texttt{evaporation}, and \texttt{update}.
+
+In \texttt{render} (Table~\ref{tab:timing_summary}), the time required to draw the scene is measured, including the \texttt{blit} stage and the full screen-frame representation cost. All these contributions are ultimately included in \texttt{iteration\_total} (Table~\ref{tab:timing_summary}), which represents the complete cost of one simulation iteration.
+
+Additionally, general simulation information is stored, including the number of measured iterations, the final amount of food after the simulation ends, and the iteration at which the first food unit arrives.
+
+As a concrete reference, Table~\ref{tab:timing_summary_threads1_ants5000} summarizes the measured values obtained from the non-vectorized implementation for a simulation of 5000 ants executed until the first food unit reaches the nest and during the 10 subsequent iterations. In this sense, the average, minimum, and maximum values reported in the table correspond to per-iteration results.
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of measured execution times in the simulation.}
+\label{tab:timing_summary}
+\begin{tabular}{p{0.24\linewidth} p{0.68\linewidth}}
+\hline
+\textbf{Time metric} & \textbf{Brief description} \\
+\hline
+\texttt{event\_poll} & SDL event handling. \\
+\texttt{ants\_advance} & Ant movement and decisions. \\
+\texttt{evaporation} & Pheromone evaporation. \\
+\texttt{update} & State consolidation and restoration. \\
+\texttt{advance\_total} & Total simulation-core cost. \\
+\texttt{render} & Frame rendering time. \\
+\texttt{iteration\_total} & Total iteration time. \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\centering
+\caption{Measured timing statistics for the non-vectorized implementation with 1 thread and 5000 ants.}
+\label{tab:timing_summary_threads1_ants5000}
+\scriptsize
+\setlength{\tabcolsep}{2.8pt}
+\renewcommand{\arraystretch}{1.08}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{Metric} & \textbf{Count} & \textbf{Total [ms]} & \textbf{Mean [ms]} & \textbf{Min [ms]} & \textbf{Max [ms]} \\
+\midrule
+\texttt{event\_poll} & 2572 & 54.651 & 0.021 & 0.007 & 0.938 \\
+\texttt{ants\_advance} & 2572 & 4099.533 & 1.594 & 1.136 & 4.595 \\
+\texttt{evaporation} & 2572 & 922.001 & 0.358 & 0.255 & 0.956 \\
+\texttt{update} & 2572 & 8.828 & 0.003 & 0.002 & 0.054 \\
+\texttt{advance\_total} & 2572 & 5030.363 & 1.956 & 1.416 & 5.272 \\
+\texttt{render} & 2572 & 34364.856 & 13.361 & 2.466 & 34.371 \\
+\texttt{blit} & 2572 & 39733.913 & 15.449 & 0.457 & 16.907 \\
+\texttt{iteration\_total} & 2572 & 79184.842 & 30.787 & 15.232 & 48.037 \\
+\bottomrule
+\end{tabular}%
+}
+\par\vspace{2pt}\parbox{\columnwidth}{\raggedright\footnotesize\textit{Note.} Additional run metadata: \texttt{total\_iterations}=2572, \texttt{measured\_iterations}=2572, \texttt{final\_food\_quantity}=1, and \texttt{first\_food\_iteration}=2562.}
+\end{table}
+
+It becomes evident from the results of the process that the dominant component within each of the iterations of the ant dynamics is rendering, whereas within the specific computation stages only the advance of the ants is the one that represents the largest average time within each of the iterations of the process. It is also observed that this behavior is not limited to the drawing stage alone, since the associated \texttt{blit} cost also occupies a significant fraction of the full iteration time, which reinforces that the rendering pipeline dominates the global execution budget, while within the simulation core the greatest impact is concentrated in \texttt{ants\_advance}.
+
+\subsection{Algorithmic Equivalence}
+A general methodology is proposed for the analysis of the general behavior of the parallelization strategies that are proposed to be implemented within the methodological framework of the stated problem. In the first place, a generalized execution and comparison framework is proposed, corresponding to the execution of the algorithm until the first food item reaches the nest and the 10 subsequent iterations. In this context, it is intended that the results provided by all the algorithms make it possible to identify the number of iterations at which this milestone is reached in the simulation, with the idea of verifying that this number is the same for ant colonies of the same size and, in this way, verifying that the simulated dynamics are in fact equivalent and therefore that their results are comparable.
+
+It is also proposed to record the amount of food that reaches the nest during those 10 subsequent iterations as a sample of equivalence in the dynamics of the colony after the arrival of the first food item. Under this criterion, the common observation window is not defined only by a fixed number of iterations, but by a shared behavioral event in the simulation, which makes it possible to compare the different implementations from an equivalent point in the evolution of the colony. In this way, the comparison framework is intended not only to contrast execution times, but also to verify that the underlying simulated behavior remains consistent across the different parallelization strategies.

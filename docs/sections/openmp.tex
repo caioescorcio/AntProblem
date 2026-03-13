@@ -1,0 +1,48 @@
+\subsection{Shared-memory OpenMP parallelization}
+
+In the \texttt{population.cpp} implementation, shared-memory parallelization is introduced at the loop level over the ant population using OpenMP within the \texttt{advance\_all} function.
+A \texttt{\#pragma omp parallel} region is created, and the loop iterating over the ants is divided among the available threads using a \texttt{schedule(static)} clause, which evenly pre-assigns contiguous chunks of the population to each thread.
+To avoid data races and false sharing when ants update the pheromone grid, a two-phase update strategy is implemented.
+Instead of writing directly to the shared pheromone map, each thread maintains a dynamically resizing local buffer (\texttt{local\_touched}) to record the flat indices of the cells traversed by its assigned ants.
+Concurrently, the amount of food collected by the ants is safely accumulated across all threads using an OpenMP \texttt{reduction(+ : food\_delta)} clause.
+Once the parallel computation region concludes, the main thread sequentially iterates over all thread-local buffers to apply the marks to the global pheromone map. This strategy guarantees thread safety, avoids costly atomic locks during the movement phase, and preserves deterministic behavior in the simulation.
+
+\subsection{OpenMP results analysis}
+The dominant component in the execution time of the vectorized algorithm is the rendering process, which is not susceptible to being parallelized and therefore causes unexpected dynamics in the response of the system to the increase in the computing units. It is therefore proposed, for this section of the analysis, to analyze only the behavior of the headless execution of the algorithm, that is, without rendering, and to observe the effect that shared-memory parallelization has on the performance of the elements of the problem other than rendering.
+
+The performance of the vectorized OpenMP implementation can be analyzed through the execution-time breakdowns for different colony sizes, as illustrated in Fig.~\ref{fig:omp_calc_only_selected}.
+The charts clearly demonstrate that the ``Ant movement'' phase completely dominates the computational cost across all configurations, regardless of the colony size.
+For small and medium thread counts (from 1 up to approximately 4 or 6 threads), there is a noticeable reduction in the overall mean execution time, indicating a successful and effective parallel scaling.
+
+However, as the number of threads continues to increase, the speedup tends to stagnate and, in some configurations, the total time even experiences a slight increase.
+This plateau effect is primarily caused by memory bandwidth saturation and the intrinsic overhead of OpenMP thread management.
+For smaller colonies, such as 5000 ants, dividing the workload among 8 to 12 threads results in very little useful computation per thread; consequently, the parallelization overhead becomes disproportionately large compared to the actual calculation time.
+While larger colonies (e.g., 40000 and 160000 ants) provide a sufficient workload to benefit more extensively from parallelization, they still suffer from diminishing returns at high thread counts due to shared-memory access contention.
+Furthermore, the non-parallelized sequential sections—such as the final consolidation of the pheromone updates and the constant ``Evaporation'' and ``Update'' stages—contribute to limiting the maximum achievable speedup, in accordance with Amdahl's Law.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../vectorized_omp/results/sweeps_render_food10/plots/omp_calc_only_ants5000.png}
+    \\[-2mm]
+    {\footnotesize (a) 5000 ants}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../vectorized_omp/results/sweeps_render_food10/plots/omp_calc_only_ants40000.png}
+    \\[-2mm]
+    {\footnotesize (b) 40000 ants}
+\end{minipage}
+
+\vspace{1mm}
+\begin{minipage}{0.62\columnwidth}
+    \centering
+    \safeincludegraphics[width=\linewidth]{../../vectorized_omp/results/sweeps_render_food10/plots/omp_calc_only_ants160000.png}
+    \\[-2mm]
+    {\footnotesize (c) 160000 ants}
+\end{minipage}
+\caption{Vectorized OpenMP compute-only breakdown for selected colony sizes.}
+\label{fig:omp_calc_only_selected}
+\end{figure}
