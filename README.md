@@ -1,142 +1,89 @@
-# AntProblem
-Parallel computing approach for the Ant Problem - OS02 course at ENSTA Paris
+# AntProblem: Parallel Computing for Ant Colony Optimization
 
+This repository contains the complete implementation of a parallelized Ant Colony Optimization (ACO) simulation on fractal terrains. This project was developed as part of the OS02 course at ENSTA Paris.
 
-# MingW + UCRT64 execution
+## Project Overview
 
-How to execute the code on Windows:
+The goal of this project is to optimize the performance of an ACO simulation by progressively applying various parallel computing techniques. The simulation features ants navigating a fractal terrain, laying pheromones, and searching for food to bring back to their nest. 
 
-## Setup
+The optimizations are layered incrementally across several subdirectories, allowing for clear performance comparisons between different paradigms: baseline object-oriented, data-oriented (vectorized), shared-memory (OpenMP), and distributed-memory (MPI) approaches.
 
-First, assure that the correct libs are installed for the code execution (SDL2 + CMake for compilation).
+## Repository Layout & Implementation Variants
 
-After installing UCRT64 on Windows, update its current libraries:
+- **`nonvectorized/`**: The baseline implementation featuring an object-per-ant design. Includes real-time SDL rendering and per-iteration timing exports to CSV.
+- **`vectorized/`**: A data-oriented redesign of the baseline. Ants are managed in contiguous arrays to improve cache locality and enable compiler vectorization.
+- **`vectorized_omp/`**: Shared-memory parallelization using OpenMP, built on top of the vectorized baseline. Threads share the global map and parallelize ant processing and pheromone updates.
+- **`optmz1/` (MPI Population Decomposition)**: Distributed-memory parallelization where each MPI process contains the entire map but only manages a subset of the total ant population. Pheromones are synchronized globally via `MPI_Allreduce`.
+- **`distributed_subdomain_mpi/` (MPI Domain Decomposition)**: Advanced distributed-memory parallelization using a 2D Cartesian topology. The terrain is divided into subdomains handled by separate MPI processes. Processes only communicate ghost/halo pheromone borders and migrating ants.
+- **`distributed_subdomain_hybrid_mpi_omp/`**: A hybrid approach combining MPI domain decomposition across nodes with OpenMP shared-memory multithreading within each node.
 
-```bash
-pacman -Syu
-```
+## Setup and Requirements
 
-Then install the packages:
+### Linux
+The project requires a C++17 compatible compiler, CMake, and the SDL2 library for rendering. For MPI features, an MPI implementation like OpenMPI or MPICH is required. OpenMP must also be supported by your compiler.
 
-```bash
-pacman -S mingw-w64-ucrt-x86_64-SDL2
-pacman -S mingw-w64-ucrt-x86_64-cmake
-```
-
-## Execution
-
-In this project you may use Makefile (if on Linux or Windows's MingW32 Makefile) with:
-
- ```bash
- cd {PROJET FOLDER}/src
- make
- ant_simu.exe
- ```
-
-For executing the project with CMake, you may use:
-
-```bash
-cd {PROJET FOLDER}
-mkdir build
-cd build
-cmake -G "MinGW Makefiles" ..
-cmake --build .
-ant_simu.exe
-```
-
-# Scalable Ant Colony Optimization Engine on Fractal Terrains
-
-This project implements an Ant Colony Optimization (ACO) simulation on a fractal terrain, with profiling support to measure performance per simulation iteration.
-
-## Repository Layout
-
-- `nonvectorized/`: baseline implementation (object-per-ant design, SDL rendering, CSV timing export)
-- `Subject.pdf`: project requirements and optimization roadmap (vectorization, OpenMP, MPI)
-
-## Baseline Features
-
-- Real-time SDL visualization of ants, pheromones, nest, and food
-- Full simulation loop with pheromone update and evaporation
-- Iteration-level timing breakdown exported to CSV
-- Automatic summary export with key metadata (including first-food iteration)
-
-## Requirements (Linux)
-
-- `g++` with C++17 support
-- `make`
-- `libsdl2-dev`
-
-Install dependencies:
-
+Install dependencies (Ubuntu/Debian):
 ```bash
 sudo apt update
-sudo apt install -y build-essential libsdl2-dev
+sudo apt install -y build-essential libsdl2-dev cmake openmpi-bin libopenmpi-dev
 ```
 
-## Build
+### Windows (MinGW + UCRT64)
+To build and run on Windows, you must install MSYS2 with the UCRT64 environment. Also, MS-MPI must be installed for the MPI variants.
 
-From the `nonvectorized` folder:
-
+1. Install MSYS2 and open the UCRT64 terminal.
+2. Update packages and install dependencies:
 ```bash
-cd nonvectorized
-make clean
-make all CXXFLAGS2='-std=c++17 -O2 -march=native -Wall'
+pacman -Syu
+pacman -S mingw-w64-ucrt-x86_64-SDL2
+pacman -S mingw-w64-ucrt-x86_64-cmake
+pacman -S mingw-w64-ucrt-x86_64-toolchain
 ```
+3. Install MS-MPI SDK and Runtime from the official Microsoft site to compile the MPI versions.
 
-## Run (Default: Full Simulation + Render + CSV Logging)
+## Building and Running
 
+You can compile each variant individually by navigating to its directory. Both `make` and `CMake` are configured differently depending on the subdirectory.
+
+### Using CMake (Recommended)
 ```bash
+cd <variant_directory> # e.g., cd vectorized
+mkdir build && cd build
+cmake -G "MinGW Makefiles" .. # On Windows
+# OR
+cmake .. # On Linux
+cmake --build .
 ./ant_simu.exe
 ```
 
-By default, the program:
-
-- opens the SDL window and runs until you close it
-- appends per-iteration timings to `nonvectorized/results/iter.csv`
-- writes aggregated metrics to `nonvectorized/results/summary.csv` when the run ends
-
-## Optional CLI Flags
-
+### Using Makefile (Linux / MinGW)
+For projects without a `CMakeLists.txt`, or if using make directly:
 ```bash
-./ant_simu.exe --help
+cd <variant_directory>
+make clean
+make all CXXFLAGS2='-std=c++17 -O2 -march=native -Wall'
+./ant_simu.exe
 ```
 
-Main options:
+### Running MPI Versions
+For MPI implementations (`optmz1`, `distributed_subdomain_mpi`), use `mpiexec` or `mpirun`:
+```bash
+mpiexec -n 4 ./ant_simu.exe
+```
+*Note: For the domain decomposition variants, passing `--headless` might be necessary depending on your environment to avoid multiple processes attempting to draw to the same window.*
 
-- `--headless`: disable rendering/event polling timings
-- `--max-iterations N`: stop automatically after `N` iterations
-- `--warmup-iterations N`: skip first `N` iterations from stats
-- `--timing-csv PATH`: custom per-iteration output file
-- `--summary-csv PATH`: custom summary output file
+## Command-Line Arguments & Profiling 
 
-## Output Files
+All variants support the following CLI flags to customize the execution and profile performance:
+- `--headless`: Disable the SDL rendering output.
+- `--max-iterations N`: Automatically terminate after `N` iterations.
+- `--warmup-iterations N`: Skip the initial `N` iterations for timing statistics.
+- `--timing-csv PATH`: Export detailed per-iteration timings to a specific file.
+- `--summary-csv PATH`: Export the aggregated metrics summary to a specific file.
 
-### `results/iter.csv`
+For example, a typical profiling run on the hybrid implementation:
+```bash
+mpiexec -n 4 ./ant_simu.exe --max-iterations 1000 --headless
+```
 
-Per-iteration values:
-
-- `ants_advance_ms`
-- `evaporation_ms`
-- `update_ms`
-- `advance_total_ms`
-- `render_ms`
-- `blit_ms`
-- `iteration_total_ms`
-- `food_quantity`
-
-### `results/summary.csv`
-
-Aggregated metrics (`count`, `total_ms`, `mean_ms`, `min_ms`, `max_ms`) + metadata:
-
-- `total_iterations`
-- `measured_iterations`
-- `final_food_quantity`
-- `first_food_iteration` (or `not_reached`)
-
-## Next Optimization Stages
-
-Following `Subject.pdf`, this baseline is intended to be compared against:
-
-1. vectorized data-oriented implementation
-2. shared-memory parallel version (OpenMP)
-3. distributed-memory parallel version (MPI strategies)
+Results are written by default to `results/iter.csv` and `results/summary.csv` inside the respective variant's folder. These logs track individual task timings like `ants_advance_ms`, `evaporation_ms`, `update_ms`, and communication overheads, which can be visualized using the provided python scripts.
