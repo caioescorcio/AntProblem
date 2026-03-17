@@ -13,7 +13,7 @@ The optimizations are layered incrementally across several subdirectories, allow
 - **`nonvectorized/`**: The baseline implementation featuring an object-per-ant design. Includes real-time SDL rendering and per-iteration timing exports to CSV.
 - **`vectorized/`**: A data-oriented redesign of the baseline. Ants are managed in contiguous arrays to improve cache locality and enable compiler vectorization.
 - **`vectorized_omp/`**: Shared-memory parallelization using OpenMP, built on top of the vectorized baseline. Threads share the global map and parallelize ant processing and pheromone updates.
-- **`optmz1/` (MPI Population Decomposition)**: Distributed-memory parallelization where each MPI process contains the entire map but only manages a subset of the total ant population. Pheromones are synchronized globally via `MPI_Allreduce`.
+- **`distributed_population_mpi/` (MPI Population Decomposition)**: Distributed-memory parallelization where each MPI process contains the entire map but only manages a subset of the total ant population. Pheromones are synchronized globally via `MPI_Allreduce`.
 - **`distributed_subdomain_mpi/` (MPI Domain Decomposition)**: Advanced distributed-memory parallelization using a 2D Cartesian topology. The terrain is divided into subdomains handled by separate MPI processes. Processes only communicate ghost/halo pheromone borders and migrating ants.
 - **`distributed_subdomain_hybrid_mpi_omp/`**: A hybrid approach combining MPI domain decomposition across nodes with OpenMP shared-memory multithreading within each node.
 
@@ -66,7 +66,7 @@ make all CXXFLAGS2='-std=c++17 -O2 -march=native -Wall'
 ```
 
 ### Running MPI Versions
-For MPI implementations (`optmz1`, `distributed_subdomain_mpi`), use `mpiexec` or `mpirun`:
+For MPI implementations (`distributed_population_mpi`, `distributed_subdomain_mpi`), use `mpiexec` or `mpirun`:
 ```bash
 mpiexec -n 4 ./ant_simu.exe
 ```
